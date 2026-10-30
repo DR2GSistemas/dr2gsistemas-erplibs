@@ -4,6 +4,12 @@ Todas las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Sin cambios
+
+Pendiente de la próxima versión.
+
+## [1.2.0] — 2026-10-30
+
 ### Añadido
 
 - **Cache**: `CacheManager` (driver `array|file|redis` por entorno), trait `CachesResponses`
@@ -23,6 +29,14 @@ Todas las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 - **View**: `Renderer` con `render()` y `layout()` para vistas PHP con layout.
 - **CLI `new:app`**: genera un proyecto con ruta, controlador, vistas y layout,
   `bin/app`, `public/index.php`, tests y README (`docs/app-scaffold.md`).
+
+### Corregido
+
+- Scaffold: el `ApiKernel` ya no usa `$this` dentro de un closure `static` en el
+  manejador de errores (rompía todas las respuestas de error) y declara el
+  `use CacheManager`.
+- Scaffold: namespace de la aplicación sin el `App\` duplicado (`{Ns}\Http` sobre
+  `app/`), que impedía el autoload de los proyectos generados.
 
 ## [1.0.0] — 2026-10-30
 
@@ -63,4 +77,5 @@ Primera versión estable del ORM.
 - `ValidationException` fallaba con `implode()` sobre errores multidimensionales.
 - `Model::hydrate()` no inicializaba las propiedades tipadas declaradas.
 
-[1.0.0]: https://github.com/dr2gsistemas/erplibs/releases/tag/v1.0.0
+[1.2.0]: https://github.com/DR2GSistemas/dr2gsistemas-erplibs/releases/tag/v1.2.0
+[1.0.0]: https://github.com/DR2GSistemas/dr2gsistemas-erplibs/releases/tag/v1.0.0
