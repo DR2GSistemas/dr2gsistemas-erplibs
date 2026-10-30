@@ -73,6 +73,14 @@ class SchemaBuilder
         return $this->operations;
     }
 
+    /**
+     * Conexión que recibe las sentencias DDL.
+     */
+    public function connection(): Connection
+    {
+        return $this->connection;
+    }
+
     public function resetOperations(): void
     {
         $this->operations = [];

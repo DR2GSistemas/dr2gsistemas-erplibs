@@ -307,6 +307,17 @@ final class RoutingTest extends TestCase
         Request::create('POST', '/users', body: '{invalid')->json();
     }
 
+    public function testInputReadsJsonOrFormBody(): void
+    {
+        $json = Request::create('POST', '/todos', body: '{"title":"A"}', headers: ['Content-Type' => 'application/json']);
+        $form = Request::create('POST', '/todos', body: 'title=B&done=1');
+        $empty = Request::create('GET', '/todos');
+
+        self::assertSame(['title' => 'A'], $json->input());
+        self::assertSame(['title' => 'B', 'done' => '1'], $form->input());
+        self::assertSame([], $empty->input());
+    }
+
     public function testRequestExposesHeadersAndQuery(): void
     {
         $request = Request::create('GET', '/search', query: ['q' => 'azul'], headers: ['X-Tenant' => 'acme']);

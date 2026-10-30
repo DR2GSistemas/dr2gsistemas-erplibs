@@ -3,11 +3,11 @@
 namespace Dr2g\ErpLibs\CLI\Scaffold;
 
 /**
- * Genera el esqueleto de una aplicación lista para usar:
- * proyectos con un route, un controller y views con el controller.
+ * Orquesta la creación de una aplicación: proyecto base + CRUD de ejemplo.
  *
- * Escribe en un directorio vacío (o inexistente) y devuelve la lista de
- * archivos creados. No ejecuta `composer install` ni toca archivos.
+ * `app:create <nombre>` crea `<nombre>/` en el directorio actual con el
+ * scaffold conectado a la librería y, con `--crud=todo`, un CRUD de todolist
+ * listo para probar.
  */
 final class AppGenerator
 {
@@ -19,18 +19,36 @@ final class AppGenerator
     }
 
     /**
-     * @param array{force?: bool, dryRun?: bool} $options
+     * @param array{force?: bool, dryRun?: bool, crud?: string|null} $options
      * @return list<string> rutas relativas creadas
      */
-    public function generate(string $namespace, ?string $name = null, array $options = []): array
+    public function generate(?string $namespace = null, ?string $name = null, array $options = []): array
     {
+        // Con nombre de proyecto explícito se ignora el sufijo aleatorio del temp dir.
+        $namespace ??= self::defaultNamespace($name ?? basename($this->basePath));
         $name ??= basename($this->basePath);
-        $name = preg_replace('/[^A-Za-z0-9 _-]/', '', $name) ?: 'App';
+        $name = (string) preg_replace('/[^A-Za-z0-9 _-]/', '', $name) ?: 'App';
 
         $this->assertNamespace($namespace);
         $this->assertTargetIsUsable((bool) ($options['force'] ?? false));
 
+        // La librería se referencia por ruta cuando existe en este checkout.
+        AppScaffold::useLibraryPath($this->basePath);
+
         $files = AppScaffold::files($namespace, trim($name), $this->basePath);
+
+        $crud = $options['crud'] ?? null;
+
+        if ($crud !== null && $crud !== '') {
+            $files['routes/web.php'] = AppScaffold::routes($namespace, true);
+        }
+
+        if ($crud !== null && $crud !== '') {
+            $files += match ($crud) {
+                'todo' => CrudScaffold::files($namespace),
+                default => throw new \InvalidArgumentException("CRUD no soportado: '{$crud}'. Disponibles: todo."),
+            };
+        }
 
         foreach ($files as $relative => $content) {
             $path = $this->basePath . '/' . $relative;
@@ -38,12 +56,31 @@ final class AppGenerator
             if (!($options['dryRun'] ?? false)) {
                 $this->ensureDirectory(dirname($path));
                 file_put_contents($path, $content);
+
+                if ($relative === 'bin/app') {
+                    @chmod($path, 0755);
+                }
             }
 
             $this->created[] = $relative;
         }
 
         return $this->created;
+    }
+
+    /**
+     * `proyect001` → `Proyect001`; un separador genera sub-namespace.
+     */
+    public static function defaultNamespace(string $name): string
+    {
+        $parts = preg_split('/[^A-Za-z0-9]+/', $name, -1, PREG_SPLIT_NO_EMPTY) ?: ['App'];
+
+        $parts = array_map(
+            static fn (string $part): string => ucfirst(strtolower($part)),
+            $parts
+        );
+
+        return implode('\\', $parts);
     }
 
     private function assertNamespace(string $namespace): void
@@ -57,12 +94,8 @@ final class AppGenerator
 
     private function assertTargetIsUsable(bool $force): void
     {
-        if (!is_dir($this->basePath) && !$force && is_dir($this->basePath) === false && file_exists($this->basePath)) {
-            throw new \RuntimeException("Ya existe un archivo en {$this->basePath}.");
-        }
-
         if (!is_dir($this->basePath)) {
-            if (!$force && file_exists($this->basePath)) {
+            if (file_exists($this->basePath)) {
                 throw new \RuntimeException("Ya existe un archivo en {$this->basePath}.");
             }
 

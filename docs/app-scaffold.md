@@ -1,4 +1,72 @@
-# Aplicaciones — `erplibs new:app`
+# Aplicaciones — `app:create` y `new:app`
+
+Genera un proyecto arrancable con **ruta + controlador + vistas** conectados a la
+librería y, opcionalmente, un **CRUD de ejemplo** completo.
+
+```bash
+# App base (ruta + controller + views)
+vendor/bin/erplibs app:create proyect001
+
+# App base + CRUD de todolist de prueba (modelo, migración, controller, vistas, tests)
+vendor/bin/erplibs app:create proyect001 --crud=todo
+
+cd proyect001
+composer install
+php -S localhost:8080 -t public public/index.php
+open http://localhost:8080/todos
+```
+
+## Opciones de `app:create`
+
+| Opción | Default | Descripción |
+| --- | --- | --- |
+| `<nombre>` | — | crea `<nombre>/` (namespace `Proyect001`, `MiErp`…) |
+| `--crud=` | — | `todo` añade el CRUD de prueba |
+| `--namespace=` | del nombre | raíz PSR-4, p. ej. `Acme\Erp` |
+| `--path=` | raíz del monorepo | directorio donde crear el proyecto |
+| `--force` | `false` | escribe sobre un directorio no vacío |
+| `--dry-run` | `false` | lista lo que crearía sin escribir |
+
+`new:app` es la variante anterior (recibe el directorio completo y no añade CRUD).
+
+## Qué genera `--crud=todo`
+
+| Archivo | Contenido |
+| --- | --- |
+| `app/Models/Todo.php` | modelo con `title` (requerido, 3–200), `done`, `toggle()`, `isDone()` |
+| `migrations/..._create_todos_table.php` | tabla `todos` (SQLite/MySQL) |
+| `app/Controllers/TodoController.php` | index, show, create, store, edit, update, toggle, destroy |
+| `views/todo/{index,form,show}.php` | listado, formulario y detalle |
+| `routes/todo.php` | 8 rutas POST/GET |
+| `tests/Feature/TodoCrudTest.php` | CRUD completo sobre SQLite en memoria |
+| `app/Support/Database.php` | resolución de la conexión |
+
+## Base de datos del proyecto generado
+
+- **Por defecto SQLite** en `storage/app.sqlite`; el servidor embebido crea la
+  tabla al arrancar (`db-init` en `Kernel::run()`), así que funciona sin preparar nada.
+- **MySQL**: `DB_CONNECTION=mysql` + `DR2G_DB_*`, y `php bin/app migrate`.
+
+## PSR-4 del proyecto generado
+
+Los archivos viven en `app/` con el namespace `{Ns}\App\...`, y el
+`composer.json` mapea:
+
+```json
+"psr-4": { "Proyect001\App\": "app/" }
+```
+
+Así `app/Http/Kernel.php` corresponde a `Proyect001\App\Http\Kernel`.
+
+## Verificación sin navegador
+
+```bash
+php scripts/smoke_app.php  ../proyect001   # home, 404, 405
+php scripts/smoke_crud.php ../proyect001   # CRUD completo sobre SQLite en memoria
+```
+
+## Documentación previa (nuevo proyecto base)
+
 
 Genera un proyecto arrancable con **ruta + controlador + vistas** conectados a la
 librería.

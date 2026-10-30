@@ -17,6 +17,50 @@ final class AppScaffold
     public static string $libraryPath = '../../libs/dr2gsistemas_erplibs';
 
     /**
+     * Fija la ruta de la librería (relativa al proyecto generado) si existe
+     * realmente; si no, se usa la publicada en Packagist.
+     */
+    public static function useLibraryPath(string $projectBase, ?string $libraryDir = null): void
+    {
+        $projectBase = str_replace('\\', '/', $projectBase);
+        $candidates = [];
+
+        if ($libraryDir !== null) {
+            $candidates[] = $libraryDir;
+        }
+
+        $candidates[] = dirname($projectBase, 2) . '/libs/dr2gsistemas_erplibs';
+        $candidates[] = $projectBase . '/../libs/dr2gsistemas_erplibs';
+
+        foreach ($candidates as $candidate) {
+            if (is_dir($candidate)) {
+                $relative = self::relativePath($projectBase, (string) realpath($candidate));
+                self::$libraryPath = $relative;
+
+                return;
+            }
+        }
+
+        self::$libraryPath = '';
+    }
+
+    /**
+     * Ruta relativa POSIX entre dos directorios absolutos.
+     */
+    public static function relativePath(string $from, string $to): string
+    {
+        $from = array_values(array_filter(explode('/', str_replace('\\', '/', $from))));
+        $to = array_values(array_filter(explode('/', str_replace('\\', '/', $to))));
+
+        while ($from !== [] && $to !== [] && $from[0] === $to[0]) {
+            array_shift($from);
+            array_shift($to);
+        }
+
+        return str_repeat('../', count($from)) . implode('/', $to);
+    }
+
+    /**
      * Paquete `slug` válido para Composer: minúsculas y guiones.
      */
     public static function slug(string $value): string
@@ -32,15 +76,17 @@ final class AppScaffold
      */
     public static function libraryRequirement(): string
     {
-        return self::$libraryPath === ''
-            ? ",\n        \"dr2gsistemas/erplibs\": \"*\"" : '';
+        // Siempre se declara el paquete: con `path` resuelve al monorepo; en
+        // Packagist/VCS basta con borrar la entrada `repositories`.
+        return ",\n        \"dr2gsistemas/erplibs\": \"*\"";
     }
 
     /**
      * @return array<string, string> ruta relativa => contenido
      */
-    public static function files(string $namespace, string $name, string $viewPath): array
+    public static function files(string $namespace, string $name, string $viewPath, bool $withCrud = false): array
     {
+        // {Ns}\App\Http\Kernel -> app/Http/Kernel.php (PSR-4 {Ns}\ => app/)
         $app = $namespace . '\\App';
 
         return [
@@ -49,11 +95,12 @@ final class AppScaffold
             'bin/app' => self::bin(),
             'config/app.php' => self::configApp($viewPath),
             'config/database.php' => self::configDatabase(),
-            'routes/web.php' => self::routes($namespace),
+            'routes/web.php' => self::routes($namespace, $withCrud),
             'app/Controllers/HomeController.php' => self::controller($app),
             'app/Http/Kernel.php' => self::kernel($app),
             'views/layout.php' => self::layout($name),
             'views/home/index.php' => self::homeView($app),
+            'views/partials/nav.php' => self::nav(),
             'views/errors/404.php' => self::errorView(404, 'Página no encontrada'),
             'views/errors/405.php' => self::errorView(405, 'Método no permitido'),
             'views/errors/500.php' => self::errorView(500, 'Error interno'),
@@ -67,11 +114,10 @@ final class AppScaffold
     public static function composer(string $namespace, string $name): string
     {
         $package = self::slug(str_replace('\\', '-', $namespace)) . '/' . self::slug($name);
-        $require = self::libraryRequirement();
         $libraryPath = self::$libraryPath;
 
-        // JSON necesita barras escapadas: el namespace va con doble barra.
-        $phpNamespace = str_replace('\\', '\\\\', $namespace) . '\\\\';
+        // JSON necesita barras escapadas: Proyect001\App\ => "Proyect001\\App\\".
+        $phpNamespace = str_replace('\\', '\\\\', $namespace) . '\\\\App\\\\';
 
         return <<<JSON
 {
@@ -79,7 +125,8 @@ final class AppScaffold
     "description": "Aplicación ERP generada con dr2gsistemas/erplibs",
     "type": "project",
     "require": {
-        "php": ">=8.4"{$require}
+        "php": ">=8.4",
+        "dr2gsistemas/erplibs": "*"
     },
     "repositories": [
         {
@@ -174,6 +221,8 @@ return [
     'views' => __DIR__ . '/../views',
     'debug' => (bool) (getenv('APP_DEBUG') ?: false),
     'name' => '{$viewPath}',
+    // Base de datos del servidor embebido (sqlite o null para no preparar nada).
+    'database' => getenv('APP_DATABASE') ?: 'sqlite:' . __DIR__ . '/../storage/app.sqlite',
 ];
 
 PHP;
@@ -185,22 +234,43 @@ PHP;
 <?php
 
 /*
- * Configuración de base de datos. Sobrescribir con variables DR2G_DB_*.
+ * Configuración de base de datos.
+ *
+ * Por defecto usa SQLite en storage/app.sqlite para que el proyecto funcione
+ * sin instalar un servidor. Para MySQL: DB_CONNECTION=mysql + DR2G_DB_*.
  */
 
 $env = static fn (string $key, string $default): string => (string) (getenv($key) ?: $default);
 
+// storage/ debe existir antes de que PDO abra el fichero.
+$storage = __DIR__ . '/../storage';
+
+if (!is_dir($storage)) {
+    @mkdir($storage, 0755, true);
+}
+
+if ($env('DB_CONNECTION', 'sqlite') === 'mysql') {
+    return [
+        'default' => 'mysql',
+        'connections' => [
+            'mysql' => [
+                'driver' => 'mysql',
+                'host' => $env('DR2G_DB_HOST', '127.0.0.1'),
+                'port' => (int) $env('DR2G_DB_PORT', '3306'),
+                'database' => $env('DR2G_DB_NAME', 'app'),
+                'username' => $env('DR2G_DB_USER', 'root'),
+                'password' => $env('DR2G_DB_PASSWORD', ''),
+                'charset' => $env('DR2G_DB_CHARSET', 'utf8mb4'),
+            ],
+        ],
+    ];
+}
+
 return [
-    'default' => 'mysql',
+    'default' => 'sqlite',
     'connections' => [
-        'mysql' => [
-            'driver' => $env('DR2G_DB_DRIVER', 'mysql'),
-            'host' => $env('DR2G_DB_HOST', '127.0.0.1'),
-            'port' => (int) $env('DR2G_DB_PORT', '3306'),
-            'database' => $env('DR2G_DB_NAME', 'app'),
-            'username' => $env('DR2G_DB_USER', 'root'),
-            'password' => $env('DR2G_DB_PASSWORD', ''),
-            'charset' => $env('DR2G_DB_CHARSET', 'utf8mb4'),
+        'sqlite' => [
+            'dsn' => $env('DR2G_DB_DSN', 'sqlite:' . $storage . '/app.sqlite'),
         ],
     ],
 ];
@@ -208,8 +278,10 @@ return [
 PHP;
     }
 
-    public static function routes(string $namespace): string
+    public static function routes(string $namespace, bool $withCrud = false): string
     {
+        $crud = $withCrud ? "\nrequire __DIR__ . '/todo.php';" : '';
+
         return <<<PHP
 <?php
 
@@ -219,7 +291,19 @@ PHP;
  * @var {$namespace}\\App\\Http\\Kernel \$kernel
  */
 
-\$kernel->router()->get('/', '{$namespace}\\App\\Controllers\\HomeController@index');
+\$kernel->router()->get('/', '{$namespace}\\App\\Controllers\\HomeController@index');{$crud}
+
+PHP;
+    }
+
+    public static function nav(): string
+    {
+        return <<<'PHP'
+<nav>
+    <a href="/">Inicio</a> ·
+    <a href="/todos">Tareas</a> ·
+    <a href="/todos/new">Nueva tarea</a>
+</nav>
 
 PHP;
     }
@@ -268,6 +352,7 @@ use Dr2g\ErpLibs\Routing\Request;
 use Dr2g\ErpLibs\Routing\Response;
 use Dr2g\ErpLibs\Routing\Router;
 use Dr2g\ErpLibs\View\Renderer;
+use {$app}\Support\Database;
 
 /**
  * Kernel HTTP: router, renderer de vistas y manejo de errores con vistas.
@@ -330,7 +415,39 @@ class Kernel
 
     public function run(): void
     {
+        \$this->prepareDevelopmentDatabase();
+
         \$this->handle()->send();
+    }
+
+    /**
+     * Servidor embebido: crea las tablas del CRUD de ejemplo cuando la base de
+     * datos es SQLite, para probar sin instalar MySQL.
+     */
+    private function prepareDevelopmentDatabase(): void
+    {
+        \$driver = \$this->config['database'] ?? null;
+
+        if (!is_string(\$driver) || !str_starts_with(\$driver, 'sqlite:')) {
+            return;
+        }
+
+        try {
+            \$connection = Database::connect(require dirname(__DIR__, 2) . '/config/database.php');
+
+            \$connection->execute(
+                'CREATE TABLE IF NOT EXISTS todos (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title VARCHAR(200) NOT NULL,
+                    done INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NULL,
+                    updated_at TEXT NULL
+                )'
+            );
+        } catch (\Throwable \$error) {
+            // Sin base de datos el servidor sigue sirviendo el inicio y los errores.
+            error_log('DB init skipped: ' . \$error->getMessage());
+        }
     }
 
     private function registerErrorHandler(): void
@@ -379,6 +496,7 @@ PHP;
 <body>
 <header><strong>{$name}</strong> — generado con dr2g erplibs</header>
 <main>
+<?php if (is_file(__DIR__ . '/partials/nav.php')) { require __DIR__ . '/partials/nav.php'; } ?>
 <?= \$content ?>
 </main>
 </body>

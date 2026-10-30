@@ -103,6 +103,29 @@ final class Request
         return $decoded;
     }
 
+    /**
+     * Entrada del formulario o del cuerpo JSON, con la misma forma.
+     *
+     * @return array<string, mixed>
+     */
+    public function input(): array
+    {
+        $contentType = $this->header('content-type') ?? '';
+
+        if (str_contains($contentType, 'application/json')) {
+            return $this->json();
+        }
+
+        if (trim($this->body) === '') {
+            return $this->query;
+        }
+
+        parse_str($this->body, $form);
+
+        /** @var array<string, mixed> $form */
+        return $form;
+    }
+
     public function param(string $name): ?string
     {
         return $this->routeParams[$name] ?? null;

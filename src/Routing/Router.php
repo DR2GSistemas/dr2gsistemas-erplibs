@@ -244,7 +244,10 @@ class Router
         return $core;
     }
 
-    private function invoke(Route $route, Request $request): mixed
+    /**
+     * Ejecuta el handler de una ruta (lo usan `dispatch()` y `Pipeline`).
+     */
+    public function invoke(Route $route, Request $request): mixed
     {
         $handler = $route->getHandler();
 

@@ -58,9 +58,13 @@ spl_autoload_register(static function (string $class) use ($app, $psr4): void {
     }
 });
 
+// El composer.json mapea {Ns}\\App\\ => app/, así que la raíz es {Ns}\\App.
 $namespace = rtrim((string) array_key_first($psr4), '\\');
-$kernelClass = $namespace . '\\App\\Http\\Kernel';
-$controllerClass = $namespace . '\\App\\Controllers\\HomeController';
+if (!str_ends_with($namespace, '\\App')) {
+    $namespace .= '\\App';
+}
+$kernelClass = $namespace . '\\Http\\Kernel';
+$controllerClass = $namespace . '\\Controllers\\HomeController';
 
 $kernel = new $kernelClass(new Renderer([$app . '/views']), ['debug' => false]);
 $kernel->router()->get('/', $controllerClass . '@index');

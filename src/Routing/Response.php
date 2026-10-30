@@ -57,6 +57,11 @@ final class Response
         return new self($this->body, $this->status, [$name => $value] + $this->headers);
     }
 
+    public function withStatus(int $status): self
+    {
+        return new self($this->body, $status, $this->headers);
+    }
+
     public function send(): void
     {
         if (!headers_sent()) {

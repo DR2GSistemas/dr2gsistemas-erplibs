@@ -15,4 +15,12 @@ abstract class Migration
 
     abstract public function up(): void;
     abstract public function down(): void;
+
+    /**
+     * Conexión activa, para migraciones que necesiten SQL específico del motor.
+     */
+    protected function connection(): \Dr2g\ErpLibs\Core\Connection
+    {
+        return $this->schema->connection();
+    }
 }
