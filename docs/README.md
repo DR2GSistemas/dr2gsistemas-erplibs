@@ -3,9 +3,7 @@
 | Documento | Contenido |
 | --- | --- |
 | [`../README.md`](../README.md) | Instalación, configuración y uso de cada subsistema |
-| [`../CONTEXT.md`](../CONTEXT.md) | Mapa del proyecto, arquitectura y estado de hallazgos |
-| [`../BACKLOG.md`](../BACKLOG.md) | Plan de entrega por fases y métricas |
-| [`../prd.md`](../prd.md) | Requisitos del producto |
+| [`../CHANGELOG.md`](../CHANGELOG.md) | Versiones y cambios |
 | [`routing.md`](routing.md) | Router HTTP: rutas, grupos, middleware, recursos RESTful |
 | [`app-scaffold.md`](app-scaffold.md) | `new:app`, vistas y layout del proyecto generado |
 | [`security.md`](security.md) | Checklist OWASP Top 10 |

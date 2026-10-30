@@ -15,6 +15,11 @@ abstract class Controller
      */
     protected array $context = [];
 
+    /**
+     * Acciones REST estándar. Si tu controlador necesita el id, no heredes de
+     * Controller: declara `show(Request $request, int $id)` y registra la ruta
+     * con `{id}` (el router inyecta los parámetros por nombre).
+     */
     public function index(Request $request): mixed
     {
         return Response::text('Not implemented.', 501);

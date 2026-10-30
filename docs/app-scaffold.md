@@ -16,6 +16,49 @@ php -S localhost:8080 -t public public/index.php
 open http://localhost:8080/todos
 ```
 
+## Servir la app: `app:serve`
+
+```bash
+# desde la raíz del proyecto generado (bin/app ya apunta a este proyecto)
+php bin/app app:serve --port 8002
+php bin/app app:serve --port=8002
+
+# desde la librería / monorepo, indicando el proyecto
+vendor/bin/erplibs app:serve ../proyect001 --port 8002
+```
+
+| Opción | Default | Descripción |
+| --- | --- | --- |
+| `--port=N` / `--port N` | `8000` | puerto (1–65535) |
+| `--host=N` / `--host N` | `127.0.0.1` | interfaz (`0.0.0.0` para exponer) |
+| `--router=archivo` | `public/index.php` | front controller |
+| `<proyecto>` | cwd | raíz de la app |
+
+Comportamiento:
+
+- Valida que exista `public/index.php` antes de arrancar.
+- Si el puerto ya está ocupado, falla con un mensaje claro en lugar de dejar el
+  servidor a medias.
+- Muestra la URL y el comando `php -S` exacto que ejecuta.
+- Ctrl+C detiene el servidor (es el mismo proceso).
+
+### Parámetros de ruta en acciones
+
+El router inyecta los parámetros `{id}` por nombre en la acción:
+
+```php
+$kernel->router()->get('/todos/{id}', 'Acme\App\Controllers\TodoController@show');
+
+class TodoController
+{
+    public function show(Request $request, int $id): Response { /* ... */ }
+}
+```
+
+> Si declaras parámetros extra, no heredes de `Controller` sin sobrescribir la
+> firma: `Controller` ya define `show(Request)`. El scaffold CRUD usa una clase
+> propia sin herencia.
+
 ## Opciones de `app:create`
 
 | Opción | Default | Descripción |

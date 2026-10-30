@@ -150,7 +150,6 @@ namespace {$app}\\Controllers;
 
 use {$app}\\Models\\Todo;
 use Dr2g\ErpLibs\Exceptions\ValidationException;
-use Dr2g\ErpLibs\Routing\Controller;
 use Dr2g\ErpLibs\Routing\Exception\NotFoundException;
 use Dr2g\ErpLibs\Routing\Request;
 use Dr2g\ErpLibs\Routing\Response;
@@ -158,7 +157,7 @@ use Dr2g\ErpLibs\Routing\Response;
 /**
  * CRUD del todolist de prueba. Cada acción devuelve una vista o redirige.
  */
-class TodoController extends Controller
+class TodoController
 {
     public function index(Request \$request): mixed
     {
@@ -168,11 +167,11 @@ class TodoController extends Controller
         ]);
     }
 
-    public function show(Request \$request): mixed
+    public function show(Request \$request, int \$id): mixed
     {
         return \$this->render(\$request, 'todo.show', [
             'title' => 'Tarea',
-            'todo' => \$this->find(\$request),
+            'todo' => \$this->find(\$id),
         ]);
     }
 
@@ -188,7 +187,7 @@ class TodoController extends Controller
     public function store(Request \$request): Response
     {
         try {
-            Todo::create(\$request->input());
+            Todo::create(\$this->payload(\$request));
         } catch (ValidationException \$error) {
             return \$this->render(\$request, 'todo.form', [
                 'title' => 'Nueva tarea',
@@ -200,19 +199,19 @@ class TodoController extends Controller
         return Response::redirect('/todos', 303);
     }
 
-    public function edit(Request \$request): mixed
+    public function edit(Request \$request, int \$id): mixed
     {
         return \$this->render(\$request, 'todo.form', [
             'title' => 'Editar tarea',
-            'todo' => \$this->find(\$request),
+            'todo' => \$this->find(\$id),
             'error' => null,
         ]);
     }
 
-    public function update(Request \$request): Response
+    public function update(Request \$request, int \$id): Response
     {
         try {
-            \$this->find(\$request)->fill(\$request->input())->save();
+            \$this->find(\$id)->fill(\$this->payload(\$request))->save();
         } catch (ValidationException \$error) {
             return \$this->render(\$request, 'todo.form', [
                 'title' => 'Editar tarea',
@@ -224,23 +223,36 @@ class TodoController extends Controller
         return Response::redirect('/todos', 303);
     }
 
-    public function toggle(Request \$request): Response
+    public function toggle(Request \$request, int \$id): Response
     {
-        \$this->find(\$request)->toggle();
+        \$this->find(\$id)->toggle();
 
         return Response::redirect('/todos', 303);
     }
 
-    public function destroy(Request \$request): Response
+    public function destroy(Request \$request, int \$id): Response
     {
-        \$this->find(\$request)->delete();
+        \$this->find(\$id)->delete();
 
         return Response::redirect('/todos', 303);
     }
 
-    private function find(Request \$request): Todo
+    /**
+     * Normaliza la entrada del formulario: checkbox "on" → true, ausente → false.
+     *
+     * @return array<string, mixed>
+     */
+    private function payload(Request \$request): array
     {
-        \$todo = Todo::find((int) \$request->param('id'));
+        \$data = \$request->input();
+        \$data['done'] = in_array(\$data['done'] ?? null, ['1', 'on', 'true', true, 1], true);
+
+        return \$data;
+    }
+
+    private function find(int \$id): Todo
+    {
+        \$todo = Todo::find(\$id);
 
         return \$todo ?? throw new NotFoundException('Tarea no encontrada.');
     }

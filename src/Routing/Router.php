@@ -246,13 +246,18 @@ class Router
 
     /**
      * Ejecuta el handler de una ruta (lo usan `dispatch()` y `Pipeline`).
+     *
+     * Las acciones de controlador reciben los parámetros de ruta por nombre:
+     * `show(Request $request, string $id)`.
      */
     public function invoke(Route $route, Request $request): mixed
     {
         $handler = $route->getHandler();
 
         if (is_array($handler) && count($handler) === 2 && is_callable($handler)) {
-            return ($handler)($request);
+            $instance = is_object($handler[0]) ? $handler[0] : new $handler[0]();
+
+            return self::callAction($instance, (string) $handler[1], $request);
         }
 
         if (is_string($handler) && str_contains($handler, '@')) {
@@ -262,13 +267,7 @@ class Router
                 throw new \RuntimeException("Controller not found: {$class}.");
             }
 
-            $controller = new $class();
-
-            if (!is_callable([$controller, $method])) {
-                throw new \RuntimeException("Action not found: {$class}@{$method}.");
-            }
-
-            return $controller->{$method}($request);
+            return self::callAction(new $class(), $method, $request);
         }
 
         if (is_callable($handler)) {
@@ -276,6 +275,26 @@ class Router
         }
 
         throw new \RuntimeException('Route handler is not callable.');
+    }
+
+    /**
+     * Invoca una acción de controlador pasando la Request y, si la acción los
+     * declara, los parámetros de ruta por nombre.
+     */
+    private static function callAction(object $controller, string $method, Request $request): mixed
+    {
+        if (!is_callable([$controller, $method])) {
+            throw new \RuntimeException('Action not found: ' . $controller::class . "@{$method}.");
+        }
+
+        $reflection = new \ReflectionMethod($controller, $method);
+        $arguments = [$request];
+
+        foreach (array_slice($reflection->getParameters(), 1) as $parameter) {
+            $arguments[] = $request->routeParams[$parameter->getName()] ?? $parameter->getDefaultValue();
+        }
+
+        return $reflection->invokeArgs($controller, $arguments);
     }
 
     /**

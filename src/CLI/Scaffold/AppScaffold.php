@@ -185,13 +185,13 @@ PHP;
 <?php
 
 /*
- * CLI de la aplicación. Delega en el CLI de la librería después de arrancar
- * el proyecto (composer install).
+ * CLI de la aplicación. Delega en el CLI de la librería (vendor/bin/erplibs)
+ * usando este proyecto como raíz de trabajo.
  */
 
 $root = dirname(__DIR__);
 
-require $root . '/bootstrap.php';
+require $root . '/vendor/autoload.php';
 
 $libraryBin = $root . '/vendor/bin/erplibs';
 
@@ -201,6 +201,11 @@ if (!is_file($libraryBin)) {
 }
 
 $_SERVER['argv'][0] = $libraryBin;
+
+// `bin/app app:serve` sirve este proyecto por defecto.
+if (($_SERVER['argv'][1] ?? '') === 'app:serve') {
+    $_SERVER['argv'][] = $root;
+}
 
 require $libraryBin;
 
@@ -280,6 +285,7 @@ PHP;
 
     public static function routes(string $namespace, bool $withCrud = false): string
     {
+        $crudJs = $withCrud ? 'true' : 'false';
         $crud = $withCrud ? "\nrequire __DIR__ . '/todo.php';" : '';
 
         return <<<PHP
@@ -291,7 +297,12 @@ PHP;
  * @var {$namespace}\\App\\Http\\Kernel \$kernel
  */
 
-\$kernel->router()->get('/', '{$namespace}\\App\\Controllers\\HomeController@index');{$crud}
+if ({$crudJs}) {
+    \$kernel->router()->get('/', static fn () => \Dr2g\ErpLibs\Routing\Response::redirect('/todos'));
+} else {
+    \$kernel->router()->get('/', '{$namespace}\\App\\Controllers\\HomeController@index');
+}
+{$crud}
 
 PHP;
     }
@@ -632,7 +643,7 @@ Aplicación ERP generada con `dr2g erplibs new:app`.
 
 ```bash
 composer install
-php -S localhost:8080 -t public public/index.php
+php bin/app app:serve --port 8000     # equivalente a php -S con este proyecto
 ```
 
 Abre <http://localhost:8080>.
