@@ -71,6 +71,7 @@ User::query()->where('email', 'LIKE', '%@example.com')->orderBy('name')->limit(1
 | --- | --- | --- |
 | Core | `Connection`, `DatabaseManager`, `QueryBuilder`, `ConnectionPool`, `CircuitBreaker` | [README](README.md) §Caché/§Logging |
 | Models | `Model`, atributos `Table/Column/PrimaryKey/Hidden/Validation` | §Modelo |
+| Routing | `Router`, `Route`, `RouteCollection`, `Request`, `Response`, `Controller` | [docs/routing.md](docs/routing.md) |
 | Migrations | `Migration`, `Blueprint`, `SchemaBuilder`, `MigrationManager`, `MigrationRepository`, `MigrationDetector` | §Migraciones |
 | Events | `Dispatcher` (`saving`, `creating`, `created`, `updating`, `updated`, `deleting`, `deleted`) | §Eventos |
 | Validation | `Validator`, `Rule` (`required`, `string`, `integer`, `numeric`, `email`, `min`, `max`, `boolean`, `Rule::extend`) | §Validación |
@@ -124,6 +125,7 @@ DR2G_TEST_PASSWORD=root composer test:all
 src/Core        Connection, QueryBuilder, DatabaseManager, modelo de resiliencia
 src/Models      Model + atributos
 src/Migrations  DDL, batches, detección desde atributos
+src/Routing     Router, Route/RouteCollection, Request/Response, Controller
 src/Events      Dispatcher
 src/Validation  Rule + Validator
 src/Serialization Resource + Paginator
@@ -138,6 +140,7 @@ src/Testing     Dobles y helpers para consumidores
 
 - [`README.md`](README.md) — esta guía (secciones detalladas abajo).
 - [`docs/adr.md`](docs/adr.md) — decisiones de arquitectura.
+- [`docs/routing.md`](docs/routing.md) — router HTTP.
 - [`docs/security.md`](docs/security.md) — checklist OWASP.
 - [`docs/performance.md`](docs/performance.md) — benchmarks.
 - [`docs/acceptance.md`](docs/acceptance.md) — criterios de aceptación.

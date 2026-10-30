@@ -4,7 +4,13 @@ Todas las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-Sin cambios pendientes.
+### Añadido
+
+- **Routing**: módulo HTTP completo (`Dr2g\ErpLibs\Routing`): `Router`, `Route`,
+  `RouteCollection`, `Request`, `Response`, `Controller`, `RouteMatch` y
+  excepciones de routing (404/405/409/422). Grupos con middleware aislado,
+  recursos RESTful, rutas con nombre y `url()`, ejemplo en `examples/routes.php`
+  y guía en `docs/routing.md`.
 
 ## [1.0.0] — 2026-10-30
 

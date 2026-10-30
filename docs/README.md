@@ -6,6 +6,7 @@
 | [`../CONTEXT.md`](../CONTEXT.md) | Mapa del proyecto, arquitectura y estado de hallazgos |
 | [`../BACKLOG.md`](../BACKLOG.md) | Plan de entrega por fases y métricas |
 | [`../prd.md`](../prd.md) | Requisitos del producto |
+| [`routing.md`](routing.md) | Router HTTP: rutas, grupos, middleware, recursos RESTful |
 | [`security.md`](security.md) | Checklist OWASP Top 10 |
 | [`performance.md`](performance.md) | Benchmarks reproducibles |
 | [`adr.md`](adr.md) | Registro de decisiones de arquitectura |
