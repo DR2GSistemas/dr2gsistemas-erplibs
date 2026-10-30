@@ -165,6 +165,49 @@ final class MakeCommandsTest extends TestCase
         self::assertStringContainsString('class StoreProductRequest', $request);
     }
 
+    public function testMakeSubviewWritesIntoPartials(): void
+    {
+        $this->run_('make:subview', 'badge');
+
+        self::assertFileExists($this->base . '/src/views/partials/badge.php');
+        self::assertStringContainsString("<?= \$subview('partials.badge'", $this->read('src/views/partials/badge.php'));
+        self::assertStringContainsString('src/views/partials/badge.php', $this->read('src/views/partials/badge.php'));
+    }
+
+    public function testMakeSubviewAcceptsThePartialsPrefixAndNesting(): void
+    {
+        $this->run_('make:subview', 'partials.card');
+        $this->run_('make:subview', 'users/row');
+
+        self::assertFileExists($this->base . '/src/views/partials/card.php');
+        self::assertFileExists($this->base . '/src/views/partials/users/row.php');
+    }
+
+    public function testMakeRepositoryExtendsTheLibraryBase(): void
+    {
+        $this->run_('make:model', 'Product');
+        $this->run_('make:repository', 'Product');
+
+        $repository = $this->read('src/Repositories/ProductRepository.php');
+
+        self::assertStringContainsString('namespace Acme\\Repositories;', $repository);
+        self::assertStringContainsString('use Dr2g\\ErpLibs\\Repositories\\Repository;', $repository);
+        self::assertStringContainsString('use Acme\\Models\\Product;', $repository);
+        self::assertStringContainsString('final class ProductRepository extends Repository', $repository);
+        self::assertStringContainsString('return Product::class;', $repository);
+    }
+
+    public function testMakeRepositoryAcceptsACustomModelAndKeepsTheSuffix(): void
+    {
+        $this->run_('make:repository', 'UserRepository --model=Category');
+
+        $repository = $this->read('src/Repositories/UserRepository.php');
+
+        self::assertStringContainsString('use Acme\\Models\\Category;', $repository);
+        // El sufijo Repository no se duplica.
+        self::assertStringContainsString('class UserRepository extends Repository', $repository);
+    }
+
     public function testMakeTestPlacesFeatureTestsInTheirFolder(): void
     {
         $this->run_('make:test', 'ProductCrud --feature');

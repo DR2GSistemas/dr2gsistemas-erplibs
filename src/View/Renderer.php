@@ -38,7 +38,10 @@ class Renderer
             throw new \RuntimeException("View not found: {$view}. Searched in " . implode(', ', $this->paths));
         }
 
-        $content = self::evaluate($file, $data);
+        $content = self::evaluate($file, $data + [
+            'render' => $this,
+            'subview' => self::subviewCallback($this),
+        ]);
 
         return new Response($content, $status, ['Content-Type' => 'text/html; charset=utf-8'] + $headers);
     }
@@ -81,10 +84,40 @@ class Renderer
         $output = self::evaluate($layoutFile, $data + [
             'view' => $viewFile,
             'render' => $this,
-            'content' => self::evaluate($viewFile, $data + ['render' => $this]),
+            'subview' => self::subviewCallback($this),
+            'content' => self::evaluate($viewFile, $data + ['render' => $this, 'subview' => self::subviewCallback($this)]),
         ]);
 
         return new Response($output, $status, ['Content-Type' => 'text/html; charset=utf-8'] + $headers);
+    }
+
+    /**
+     * Devuelve el HTML de una subview ya resuelto.
+     *
+     * @param array<string, mixed> $data
+     */
+    public function subview(string $view, array $data = []): string
+    {
+        $file = $this->locate($view);
+
+        if ($file === null) {
+            throw new \RuntimeException("Subview not found: {$view}. Searched in " . implode(', ', $this->paths));
+        }
+
+        return self::evaluate($file, $data + [
+            'render' => $this,
+            'subview' => self::subviewCallback($this),
+        ]);
+    }
+
+    /**
+     * Callable `subview('partials.nav', [...])` inyectado en las vistas.
+     */
+    private static function subviewCallback(self $renderer): \Closure
+    {
+        return static function (string $view, array $data = []) use ($renderer): string {
+            return $renderer->subview($view, $data);
+        };
     }
 
     /**

@@ -8,6 +8,23 @@ Todas las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
 Pendiente de la próxima versión.
 
+## [1.6.0] — 2026-10-30
+
+### Añadido
+
+- **Subviews**: nuevo `Renderer::subview($view, $data)` y helper `$subview()`
+  inyectado en vistas, layouts y subviews. Las subviews se evalúan aisladas, se
+  pueden anidar y viven en `src/views/partials/`.
+- **CLI `make:subview`**: genera una subview en `src/views/partials`, con
+  jerarquía (`users.row` → `partials/users/row.php`).
+- **Repositories**: `Dr2g\ErpLibs\Repositories\Repository`, base abstracta con
+  `find`, `findOrFail`, `all`, `paginate`, `create`, `update`, `delete` y
+  `count`. Devuelve siempre modelos hidratados; `paginate` incluye `items`, `total`,
+  `page`, `per_page` y `last_page`, y limita `per_page` a 100.
+- **CLI `make:repository`**: genera un repositorio que extiende la base y declara
+  el modelo (`--model=` opcional).
+- Tests: `SubviewTest` y `RepositoryTest`, más los casos de los dos comandos nuevos.
+
 ## [1.5.0] — 2026-10-30
 
 ### Añadido

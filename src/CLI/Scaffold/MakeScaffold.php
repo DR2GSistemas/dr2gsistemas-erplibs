@@ -350,6 +350,65 @@ PHP;
     }
 
     /**
+     * Subview: fragmento reutilizable incluido con `$subview()`.
+     */
+    public static function subview(string $name, string $path): string
+    {
+        $partial = 'partials.' . $name;
+        $label = ucfirst(str_replace(['.', '_'], ' ', $name));
+
+        return <<<PHP
+<?php
+/**
+ * Subview {$partial}. Se incluye desde otra vista con:
+ *
+ *     <?= \$subview('{$partial}', ['label' => '...']) ?>
+ *
+ * También puede usarse desde un controlador: \$renderer->subview('{$partial}').
+ *
+ * Archivo: {$path}
+ *
+ * @var string \$label  texto visible (por defecto el nombre de la subview)
+ * @var string \$class  clases CSS opcionales
+ */
+\$label = isset(\$label) ? (string) \$label : '{$label}';
+\$class = isset(\$class) ? (string) \$class : '';
+?>
+<span class="subview <?= htmlspecialchars(\$class, ENT_QUOTES) ?>"><?= htmlspecialchars(\$label, ENT_QUOTES) ?></span>
+PHP;
+    }
+
+    /**
+     * Repositorio que extiende la base de la librería y declara el modelo.
+     */
+    public static function repository(ProjectContext $project, string $class, string $model): string
+    {
+        $namespace = self::namespace($project, 'Repositories');
+        $modelFqcn = $project->namespace . '\\Models\\' . $model;
+
+        return <<<PHP
+<?php
+
+namespace {$namespace};
+
+use Dr2g\ErpLibs\Repositories\Repository;
+use {$modelFqcn};
+
+/**
+ * Acceso a datos de {$model}. Hereda find, findOrFail, all, paginate, create,
+ * update, delete y count; añade aquí las consultas propias del dominio.
+ */
+final class {$class} extends Repository
+{
+    protected function model(): string
+    {
+        return {$model}::class;
+    }
+}
+PHP;
+    }
+
+    /**
      * Test PHPUnit vacío en el namespace AppTests.
      */
     public static function test(string $class): string

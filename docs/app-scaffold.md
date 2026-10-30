@@ -126,6 +126,8 @@ se puede apuntar a otro proyecto.
 | `make:route <uri>` | `src/routes/<nombre>.php` | `--controller=Nombre@accion`, `--method=`, `--file=`, `--force` |
 | `make:middleware <Nombre>` | `src/Http/Middleware/<Nombre>.php` | `--force` |
 | `make:request <Nombre>` | `src/Http/Requests/<Nombre>Request.php` | `--force` |
+| `make:repository <Nombre>` | `src/Repositories/<Nombre>Repository.php` | `--model=`, `--force` |
+| `make:subview <nombre>` | `src/views/partials/<nombre>.php` | `--force` |
 | `make:test <Nombre>` | `src/tests/Unit/<Nombre>Test.php` | `--feature`, `--force` |
 | `make:migration <nombre>` | `migrations/<timestamp>_<nombre>.php` | — |
 
@@ -140,6 +142,44 @@ Detalles de comportamiento:
   `src/views/users/show.php` (Renderer resuelve el punto como barra).
 - **Rutas**: cada archivo de `src/routes/` lo carga el kernel automáticamente;
   `make:route` no modifica `web.php`.
+
+## Subviews
+
+Un fragmento reutilizable vive en `src/views/partials/` y se incluye en cualquier
+vista, layout o subview con el helper `$subview()`, inyectado por el `Renderer`:
+
+```php
+<?= $subview('partials.badge', ['label' => 'Nuevo']) ?>
+```
+
+También desde un controlador: `$renderer->subview('partials.badge', [...])`.
+
+- Cada subview se evalúa aislada: sólo ve los datos que se le pasan.
+- Pueden anidarse (`partials.outer` que incluye `partials.inner`).
+- `make:subview users.row` crea `src/views/partials/users/row.php`.
+
+## Repositories
+
+`make:repository Product` genera un repositorio que extiende
+`Dr2g\ErpLibs\Repositories\Repository` y declara el modelo:
+
+```php
+final class ProductRepository extends Repository
+{
+    protected function model(): string
+    {
+        return Product::class;
+    }
+}
+```
+
+La base aporta `find`, `findOrFail` (lanza 404), `all`, `paginate` (con `items` y
+metadatos), `create`, `update`, `delete` y `count`, siempre devolviendo modelos
+hidratados. Lo propio del dominio se añade en la clase concreta.
+
+```bash
+bin/app make:repository Product --model=Product
+```
 
 ```bash
 bin/app make:controller products          # ProductsController + vista products.index
