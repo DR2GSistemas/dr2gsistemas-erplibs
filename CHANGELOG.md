@@ -8,6 +8,22 @@ Todas las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
 Pendiente de la próxima versión.
 
+## [1.6.1] — 2026-10-30
+
+### Corregido
+
+- **CLI `app:create --force`**: regenerar un proyecto que ya tenía `vendor/`
+  reescribía el código con el nuevo namespace pero dejaba el autoloader de
+  Composer apuntando al anterior, así que `bootstrap.php` fallaba con
+  `Class "App\Http\Kernel" not found`. Ahora, si el proyecto ya tiene
+  dependencias instaladas, se ejecuta `composer dump-autoload --no-cache` para
+  rehacer `vendor/composer/autoload_*.php`. Si Composer no está disponible, se
+  avisa por STDERR sin abortar.
+
+  > Corrección manual equivalente: `composer dump-autoload --no-cache` dentro del
+  > proyecto. `--no-cache` es necesario porque Composer reutiliza el autoload
+  > guardado en `vendor/composer/installed.json`.
+
 ## [1.6.0] — 2026-10-30
 
 ### Añadido

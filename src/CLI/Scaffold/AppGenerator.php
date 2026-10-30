@@ -83,7 +83,123 @@ final class AppGenerator
             $this->created[] = $relative;
         }
 
+        // El autoloader de Composer se derivó del composer.json anterior: si se
+        // regeneró con otro namespace, hay que rehacerlo o las clases no cargan.
+        if (!($options['dryRun'] ?? false)) {
+            $this->refreshAutoloader();
+        }
+
         return $this->created;
+    }
+
+    /**
+     * Regenera vendor/composer/autoload_*.php desde el composer.json actual.
+     *
+     * Sólo actúa si ya había dependencias instaladas: en un proyecto nuevo no
+     * hacemos red de Composer por el usuario.
+     */
+    private function refreshAutoloader(): void
+    {
+        if (!is_file($this->basePath . '/vendor/autoload.php')) {
+            return;
+        }
+
+        // `--no-cache` es necesario: Composer reutiliza el autoload guardado en
+        // vendor/composer/installed.json y no vería el cambio de namespace.
+        // El directorio se pasa por cwd (proc_open) para no depender del shell.
+        $process = proc_open(
+            $this->composerCommand(),
+            [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+            $pipes,
+            $this->basePath
+        );
+
+        if (!is_resource($process)) {
+            $this->warnAboutAutoloader('No se pudo ejecutar composer.');
+
+            return;
+        }
+
+        $output = stream_get_contents($pipes[1]) . stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+
+        $exitCode = proc_close($process);
+
+        if ($exitCode === 0) {
+            echo "[OK] autoload regenerado (vendor/composer)\n";
+
+            return;
+        }
+
+        $this->warnAboutAutoloader($output);
+    }
+
+    /**
+     * Comando de Composer a ejecutar en el proyecto generado.
+     *
+     * @return list<string>
+     */
+    private function composerCommand(): array
+    {
+        $arguments = ['dump-autoload', '--no-cache', '--no-interaction'];
+
+        // Ruta absoluta del ejecutable: `composer` a secas no sirve como cwd-relative
+        // ni resuelve el .bat de Windows desde proc_open.
+        $binary = self::findComposerBinary();
+
+        if ($binary !== null) {
+            return array_merge($binary, $arguments);
+        }
+
+        return array_merge(['composer'], $arguments);
+    }
+
+    /**
+     * Localiza el ejecutable de Composer (composer.bat/phar en Windows).
+     *
+     * @return list<string>|null
+     */
+    private static function findComposerBinary(): ?array
+    {
+        $names = PHP_OS_FAMILY === 'Windows'
+            ? ['composer.bat', 'composer.phar', 'composer.cmd']
+            : ['composer'];
+
+        $directories = array_filter(explode(PATH_SEPARATOR, (string) getenv('PATH')));
+
+        foreach ($directories as $directory) {
+            foreach ($names as $name) {
+                $candidate = rtrim($directory, '/\\') . DIRECTORY_SEPARATOR . $name;
+
+                if (!is_file($candidate)) {
+                    continue;
+                }
+
+                // Un .bat necesita cmd; un .phar necesita PHP.
+                return match (true) {
+                    str_ends_with(strtolower($candidate), '.bat'),
+                    str_ends_with(strtolower($candidate), '.cmd') => ['cmd', '/C', $candidate],
+                    str_ends_with(strtolower($candidate), '.phar') => [PHP_BINARY, $candidate],
+                    default => [$candidate],
+                };
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * No es fatal: el proyecto queda generado y el usuario puede reintentarlo.
+     */
+    private function warnAboutAutoloader(string $detail): void
+    {
+        fwrite(
+            STDERR,
+            "Aviso: no se pudo regenerar el autoload de Composer.\n"
+            . "Ejecuta: composer dump-autoload --no-cache\n"
+            . trim($detail) . "\n"
+        );
     }
 
     /**

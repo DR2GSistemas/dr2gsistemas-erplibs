@@ -112,6 +112,22 @@ class TodoController
 
 `new:app` es la variante anterior (recibe el directorio completo y no añade CRUD).
 
+### Regenerar un proyecto existente
+
+`app:create <nombre> --force` reescribe el scaffold y, si el proyecto ya tenía
+`vendor/`, rehace el autoloader de Composer (`composer dump-autoload --no-cache`).
+Sin ese paso, cambiar `--namespace` deja el autoload apuntando al namespace
+anterior y `bootstrap.php` falla con `Class "...\Http\Kernel" not found`.
+
+Si tienes un proyecto en ese estado, ejecuta dentro de él:
+
+```bash
+composer dump-autoload --no-cache
+```
+
+`--no-cache` es necesario: Composer reutiliza el autoload guardado en
+`vendor/composer/installed.json`.
+
 ## Comandos `make:*` para componentes
 
 Se ejecutan **dentro** del proyecto generado (buscan `composer.json` hacia arriba)

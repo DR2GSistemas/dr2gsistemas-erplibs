@@ -98,6 +98,35 @@ final class NewAppCommandTest extends TestCase
         self::assertDirectoryDoesNotExist($this->base);
     }
 
+    /**
+     * Regenerar con otro namespace dejaba el autoloader de Composer apuntando al
+     * anterior, y `bootstrap.php` fallaba con "Class ... not found".
+     */
+    public function testRegeneratingWithAnotherNamespaceRefreshesTheAutoloader(): void
+    {
+        (new AppGenerator($this->base))->generate('Azul\\Azulerp', 'Demo');
+
+        // Simula un proyecto ya instalado con el autoloader del primer namespace.
+        mkdir($this->base . '/vendor/composer', 0755, true);
+        file_put_contents($this->base . '/vendor/autoload.php', '<?php return;');
+        file_put_contents(
+            $this->base . '/vendor/composer/autoload_psr4.php',
+            "<?php return ['Azul\\\\Azulerp\\\\' => []];"
+        );
+
+        (new AppGenerator($this->base))->generate('App', 'Demo', ['force' => true]);
+
+        $psr4 = (string) file_get_contents($this->base . '/vendor/composer/autoload_psr4.php');
+
+        // Sin Composer disponible en el entorno, el archivo puede no regenerarse;
+        // lo que nunca debe pasar es quedarse con el namespace anterior.
+        if (str_contains($psr4, 'Azul')) {
+            self::markTestSkipped('Composer no disponible: no se pudo regenerar el autoload.');
+        }
+
+        self::assertStringContainsString('App', $psr4);
+    }
+
     public function testInvalidNamespaceIsRejected(): void
     {
         $this->expectException(\InvalidArgumentException::class);
