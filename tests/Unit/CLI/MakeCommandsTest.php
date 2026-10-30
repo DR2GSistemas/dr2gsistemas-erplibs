@@ -90,6 +90,23 @@ final class MakeCommandsTest extends TestCase
         self::assertStringContainsString("#[Table(name: 'categories')]", $this->read('src/Models/Category.php'));
     }
 
+    /**
+     * El ORM rellena created_at/updated_at al guardar y delete() marca
+     * deleted_at, pero sólo si el modelo declara esas columnas.
+     */
+    public function testMakeModelIncludesTimestampsAndSoftDeletes(): void
+    {
+        $this->run_('make:model', 'Product');
+
+        $model = $this->read('src/Models/Product.php');
+
+        foreach (['created_at', 'updated_at', 'deleted_at'] as $column) {
+            self::assertStringContainsString("public ?string \${$column} = null;", $model, "falta {$column}");
+        }
+
+        self::assertStringContainsString("#[Column(type: 'DATETIME', nullable: true)]", $model);
+    }
+
     public function testMakeModelAcceptsACustomTable(): void
     {
         $this->run_('make:model', 'Invoice --table=facturas');

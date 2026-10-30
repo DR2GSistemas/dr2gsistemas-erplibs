@@ -158,6 +158,13 @@ Detalles de comportamiento:
   `src/views/users/show.php` (Renderer resuelve el punto como barra).
 - **Rutas**: cada archivo de `src/routes/` lo carga el kernel automáticamente;
   `make:route` no modifica `web.php`.
+- **Modelos**: `make:model` incluye `created_at`, `updated_at` y `deleted_at`.
+  `Model` rellena los sellos de tiempo al guardar (`created_at` solo al crear,
+  `updated_at` en cada escritura) y `delete()` hace borrado lógico. Un modelo
+  **sólo** se toca si declara esas propiedades con `#[Column]`, así que los
+  modelos sobre tablas sin esas columnas siguen funcionando.
+  `make:migration create_x_table` genera el DDL con `timestamps()` y
+  `softDeletes()` para que las columnas existan.
 
 ## Subviews
 

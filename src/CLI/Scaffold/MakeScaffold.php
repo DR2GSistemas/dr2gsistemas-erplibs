@@ -212,6 +212,10 @@ PHP;
 
     /**
      * Modelo del ORM con la tabla derivada del nombre.
+     *
+     * Incluye los sellos de tiempo y el borrado lógico: `Model` rellena
+     * `created_at`/`updated_at` al guardar y `delete()` marca `deleted_at`.
+     * Ambas columnas tienen que existir en la tabla (ver `make:migration`).
      */
     public static function model(ProjectContext $project, string $class, string $table): string
     {
@@ -231,6 +235,16 @@ class {$class} extends Model
 {
     #[Column(type: 'VARCHAR(200)', validation: ['required', 'max:200'])]
     public string \$name;
+
+    #[Column(type: 'DATETIME', nullable: true)]
+    public ?string \$created_at = null;
+
+    #[Column(type: 'DATETIME', nullable: true)]
+    public ?string \$updated_at = null;
+
+    // Soft delete: delete() marca la fecha y las consultas la excluyen.
+    #[Column(type: 'DATETIME', nullable: true)]
+    public ?string \$deleted_at = null;
 }
 PHP;
     }

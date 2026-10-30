@@ -8,6 +8,28 @@ Todas las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
 Pendiente de la próxima versión.
 
+## [1.7.0] — 2026-10-30
+
+### Añadido
+
+- **ORM: sellos de tiempo automáticos.** `Model::save()` fija `created_at` (solo
+  al crear) y `updated_at` (en cada escritura) cuando el modelo declara esas
+  columnas con `#[Column]`. Antes había que asignarlas a mano.
+- **`Model::declaresColumn()`**: utilidad pública para saber si el modelo declara
+  una columna por atributo.
+- **CLI `make:model`**: el modelo generado incluye `created_at`, `updated_at` y
+  `deleted_at` (con `#[Column(type: 'DATETIME', nullable: true)]`), de modo que
+  los timestamps y el borrado lógico funcionan sin configuración.
+- **CLI `make:migration`**: el DDL de `create` incluye también `softDeletes()`
+  para que la columna `deleted_at` exista.
+
+### Notas de diseño
+
+- No hay trait `SoftDeletes` en esta librería: el borrado lógico se activa
+  declarando la propiedad `deleted_at` con `#[Column]` (`Model::usesSoftDeletes()`).
+- Los sellos se aplican **solo** si la propiedad existe y tiene `#[Column]`, así
+  que los modelos sobre tablas sin esas columnas no se ven afectados.
+
 ## [1.6.1] — 2026-10-30
 
 ### Corregido

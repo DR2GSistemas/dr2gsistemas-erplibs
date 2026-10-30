@@ -191,6 +191,10 @@ abstract class Model
             return false;
         }
 
+        // Sellos de tiempo: se fijan justo antes de escribir para que el INSERT
+        // y el UPDATE los lleven sin que el usuario los asigne a mano.
+        $this->touchTimestamps($isNew);
+
         $saved = $isNew ? $this->insert() : $this->update();
 
         if ($saved) {
@@ -386,10 +390,49 @@ abstract class Model
         return $rules;
     }
 
+    /**
+     * Fija `created_at` (sólo al crear) y `updated_at` (siempre) en los modelos
+     * que declaran esas propiedades como columnas.
+     */
+    protected function touchTimestamps(bool $isNew): void
+    {
+        $stamped = $isNew
+            ? ['created_at', 'updated_at']
+            : ['updated_at'];
+
+        $now = date('Y-m-d H:i:s');
+
+        foreach ($stamped as $attribute) {
+            if (!static::declaresColumn($attribute)) {
+                continue;
+            }
+
+            $this->attributes[$attribute] = $now;
+
+            if (property_exists($this, $attribute)) {
+                $this->{$attribute} = $now;
+            }
+        }
+    }
+
+    /**
+     * Indica si el modelo declara la columna mediante una propiedad con
+     * `#[Column]`.
+     */
+    public static function declaresColumn(string $attribute): bool
+    {
+        $reflection = new ReflectionClass(static::class);
+
+        if (!$reflection->hasProperty($attribute)) {
+            return false;
+        }
+
+        return $reflection->getProperty($attribute)->getAttributes(Column::class) !== [];
+    }
+
     protected function insert(): bool
     {
         $data = $this->getDirty();
-
         if ($data === []) {
             return true;
         }

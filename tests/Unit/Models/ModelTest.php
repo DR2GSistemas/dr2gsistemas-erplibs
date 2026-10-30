@@ -32,6 +32,22 @@ final class ArchivedItem extends Model
     public ?string $deleted_at = null;
 }
 
+#[Table(name: 'timestamped_products')]
+final class TimestampedProduct extends Model
+{
+    #[Column(type: 'VARCHAR(100)')]
+    public string $name;
+
+    #[Column(type: 'DATETIME', nullable: true)]
+    public ?string $created_at = null;
+
+    #[Column(type: 'DATETIME', nullable: true)]
+    public ?string $updated_at = null;
+
+    #[Column(type: 'DATETIME', nullable: true)]
+    public ?string $deleted_at = null;
+}
+
 final class ModelTest extends TestCase
 {
     private FakeConnection $connection;
@@ -137,5 +153,55 @@ final class ModelTest extends TestCase
         $this->expectExceptionMessage('No database manager configured');
 
         Product::find(1);
+    }
+
+    public function testTimestampsAreStampedOnCreate(): void
+    {
+        $stamped = new TimestampedProduct();
+        $stamped->fill(['name' => 'Pan'])->save();
+
+        $insert = $this->connection->inserts[0]['data'] ?? [];
+
+        self::assertArrayHasKey('created_at', $insert);
+        self::assertArrayHasKey('updated_at', $insert);
+        self::assertSame($insert['created_at'], $insert['updated_at']);
+        self::assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', (string) $insert['created_at']);
+    }
+
+    public function testUpdateRefreshesOnlyUpdatedAt(): void
+    {
+        $model = TimestampedProduct::hydrate([
+            'id' => 4,
+            'name' => 'Pan',
+            'created_at' => '2020-01-01 00:00:00',
+            'updated_at' => '2020-01-01 00:00:00',
+        ]);
+
+        $this->connection->affectedRows = 1;
+        $model->fill(['name' => 'Pan integral'])->save();
+
+        $data = $model->toArray();
+
+        self::assertSame('2020-01-01 00:00:00', $data['created_at']);
+        self::assertNotSame('2020-01-01 00:00:00', $data['updated_at']);
+    }
+
+    public function testModelsWithoutTimestampColumnsAreNotStamped(): void
+    {
+        // Product no declara created_at/updated_at: no deben inyectarse.
+        $product = new Product();
+        $product->fill(['name' => 'Pan'])->save();
+
+        $insert = $this->connection->inserts[0]['data'] ?? [];
+
+        self::assertArrayNotHasKey('created_at', $insert);
+        self::assertArrayNotHasKey('updated_at', $insert);
+    }
+
+    public function testDeclaresColumnDetectsTheAttribute(): void
+    {
+        self::assertTrue(TimestampedProduct::declaresColumn('created_at'));
+        self::assertTrue(TimestampedProduct::declaresColumn('deleted_at'));
+        self::assertFalse(Product::declaresColumn('created_at'));
     }
 }

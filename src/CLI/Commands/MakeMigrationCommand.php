@@ -65,6 +65,8 @@ class %CLASS% extends Migration
             $table->id();
             // Add columns here
             $table->timestamps();
+            // El modelo generado por make:model usa borrado lógico.
+            $table->softDeletes();
         });
     }
     
