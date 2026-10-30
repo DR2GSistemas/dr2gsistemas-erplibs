@@ -255,7 +255,7 @@ class Router
         $handler = $route->getHandler();
 
         if (is_array($handler) && count($handler) === 2 && is_callable($handler)) {
-            $instance = is_object($handler[0]) ? $handler[0] : new $handler[0]();
+            $instance = is_object($handler[0]) ? $handler[0] : self::withCache(new $handler[0](), $request);
 
             return self::callAction($instance, (string) $handler[1], $request);
         }
@@ -267,7 +267,9 @@ class Router
                 throw new \RuntimeException("Controller not found: {$class}.");
             }
 
-            return self::callAction(new $class(), $method, $request);
+            $controller = self::withCache(new $class(), $request);
+
+            return self::callAction($controller, $method, $request);
         }
 
         if (is_callable($handler)) {
@@ -275,6 +277,21 @@ class Router
         }
 
         throw new \RuntimeException('Route handler is not callable.');
+    }
+
+    /**
+     * Propaga el CacheManager del request a los controllers que lo aceptan
+     * (`@method static` con `useCache()` o trait `CachesResponses`).
+     */
+    private static function withCache(object $controller, Request $request): object
+    {
+        $cache = $request->attribute('cache');
+
+        if ($cache instanceof \Dr2g\ErpLibs\Cache\CacheManager && is_callable([$controller, 'useCache'])) {
+            $controller->useCache($cache);
+        }
+
+        return $controller;
     }
 
     /**

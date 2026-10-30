@@ -295,6 +295,18 @@ DB_PASSWORD=
 DB_CHARSET=utf8mb4
 # DB_DSN=                     # opcional: DSN completo, tiene prioridad
 
+# --- Caché --------------------------------------------------------------------
+# array | file | redis
+CACHE_DRIVER=array
+CACHE_PREFIX=dr2g:
+CACHE_TTL=300
+CACHE_PATH=storage/cache
+REDIS_DSN=tcp://127.0.0.1:6379
+REDIS_PASSWORD=
+REDIS_DB=0
+# TTL del listado del API (0 = sin caché)
+API_CACHE_TTL=60
+
 # --- Otros datos iniciales ----------------------------------------------------
 INSTALL_ADMIN_NAME="Administrador"
 INSTALL_ADMIN_EMAIL=admin@localhost

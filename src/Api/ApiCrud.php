@@ -2,6 +2,7 @@
 
 namespace Dr2g\ErpLibs\Api;
 
+use Dr2g\ErpLibs\Cache\CacheManager;
 use Dr2g\ErpLibs\Exceptions\ValidationException;
 use Dr2g\ErpLibs\Models\Model;
 use Dr2g\ErpLibs\Routing\ApiProblem;
@@ -96,8 +97,68 @@ abstract class ApiCrud
         return [];
     }
 
+    private ?CacheManager $cache = null;
+
+    /**
+     * Caché del recurso (Redis/archivo/array según `CACHE_DRIVER`).
+     */
+    public function useCache(CacheManager $cache): static
+    {
+        $this->cache = $cache;
+
+        return $this;
+    }
+
+    /**
+     * TTL del listado y del detalle (0 desactiva la caché).
+     */
+    protected function cacheTtl(): int
+    {
+        $ttl = getenv('API_CACHE_TTL');
+
+        return $ttl === false ? 60 : (int) $ttl;
+    }
+
+    /**
+     * Etiquetas de invalidación del recurso; vacío = sin caché.
+     *
+     * @return list<string>
+     */
+    protected function cacheTags(): array
+    {
+        return ['api.' . strtolower((new \ReflectionClass($this))->getShortName())];
+    }
+
+    /**
+     * Invalida el recurso tras cualquier escritura.
+     */
+    protected function invalidateCache(): void
+    {
+        $tags = $this->cacheTags();
+
+        if ($this->cache === null || $tags === [] || $this->cacheTtl() === 0) {
+            return;
+        }
+
+        $this->cache->forgetTags($tags);
+    }
+
     public function index(Request $request): Response
     {
+        $tags = $this->cacheTags();
+        $cacheable = $this->cache !== null && $tags !== [] && $this->cacheTtl() > 0
+            && !in_array($request->query['refresh'] ?? null, ['1', 'true'], true);
+
+        if ($cacheable) {
+            $key = 'index:' . md5((string) json_encode($request->query));
+            $cached = $this->cache->store()->get($key);
+
+            if (is_array($cached)) {
+                /** @var array{data: list<array<string, mixed>>, meta: array<string, mixed>} $cached */
+                return Response::json($cached);
+            }
+        }
+
         $model = $this->model();
         $page = max(1, (int) ($request->query['page'] ?? 1));
         $perPage = $this->perPage($request->query['per_page'] ?? null);
@@ -145,7 +206,7 @@ abstract class ApiCrud
         $total = $query->count();
         $rows = $query->limit($perPage)->offset(($page - 1) * $perPage)->get();
 
-        return Response::json([
+        $payload = [
             'data' => array_map(fn (Model $item): array => $this->present($item), $model::hydrateMany($rows)),
             'meta' => [
                 'page' => $page,
@@ -154,7 +215,13 @@ abstract class ApiCrud
                 'last_page' => max(1, (int) ceil($total / $perPage)),
                 'sort' => $sort === null ? null : ($direction === 'DESC' ? '-' . $sort : $sort),
             ],
-        ]);
+        ];
+
+        if ($cacheable) {
+            $this->cache->store()->put($key, $payload, $this->cacheTtl(), $tags);
+        }
+
+        return Response::json($payload);
     }
 
     public function store(Request $request): Response
@@ -165,6 +232,8 @@ abstract class ApiCrud
         } catch (ValidationException $error) {
             return ApiProblem::validation($error->errors);
         }
+
+        $this->invalidateCache();
 
         return Response::json(['data' => $this->present($item)], 201)
             ->withHeader('Location', $this->resourcePath() . '/' . $this->identifier($item));
@@ -194,6 +263,8 @@ abstract class ApiCrud
             return ApiProblem::validation($error->errors);
         }
 
+        $this->invalidateCache();
+
         return Response::json(['data' => $this->present($item)]);
     }
 
@@ -206,6 +277,7 @@ abstract class ApiCrud
         }
 
         $item->delete();
+        $this->invalidateCache();
 
         return Response::empty(204);
     }

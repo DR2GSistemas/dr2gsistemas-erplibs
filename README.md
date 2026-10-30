@@ -81,7 +81,7 @@ User::query()->where('email', 'LIKE', '%@example.com')->orderBy('name')->limit(1
 | Events | `Dispatcher` (`saving`, `creating`, `created`, `updating`, `updated`, `deleting`, `deleted`) | §Eventos |
 | Validation | `Validator`, `Rule` (`required`, `string`, `integer`, `numeric`, `email`, `min`, `max`, `boolean`, `Rule::extend`) | §Validación |
 | Serialization | `Resource` (respeta `#[Hidden]`), `Paginator` (offset y cursor) | §Serialización |
-| Cache | `CacheInterface`, `ArrayCache`, `FileCache`, `RedisCache`, `RedisClientInterface` | §Caché |
+| Cache | `CacheManager`, `CachesResponses`, `ArrayCache`, `FileCache`, `RedisCache`, `Redis\RedisConnection` | [docs/cache.md](docs/cache.md) |
 | Log | `Logger` (PSR-3, sink inyectable) | §Logging |
 | Audit | `AuditLogger`, `AuditStorageInterface`, `MemoryAuditStorage`, `Gdpr`, `RateLimiter` | §Audit |
 | Testing | `Testing\FakeConnection`, `Testing\ModelFactory` | §Testing |
@@ -138,7 +138,7 @@ src/View        Renderer de vistas PHP con layout
 src/Events      Dispatcher
 src/Validation  Rule + Validator
 src/Serialization Resource + Paginator
-src/Cache       ArrayCache, FileCache, RedisCache
+src/Cache       CacheManager, CachesResponses, ArrayCache, FileCache, RedisCache, Redis\RedisConnection
 src/Log         Logger PSR-3
 src/Audit       Auditoría, GDPR, rate limiting
 src/Security    SQLInjectionGuard
@@ -150,6 +150,7 @@ src/Testing     Dobles y helpers para consumidores
 - [`README.md`](README.md) — esta guía (secciones detalladas abajo).
 - [`docs/adr.md`](docs/adr.md) — decisiones de arquitectura.
 - [`docs/routing.md`](docs/routing.md) — router HTTP.
+- [`docs/cache.md`](docs/cache.md) — caché Redis/archivo/array para controllers.
 - [`docs/app-scaffold.md`](docs/app-scaffold.md) — `new:app` y estructura de proyecto.
 - [`docs/security.md`](docs/security.md) — checklist OWASP.
 - [`docs/performance.md`](docs/performance.md) — benchmarks.

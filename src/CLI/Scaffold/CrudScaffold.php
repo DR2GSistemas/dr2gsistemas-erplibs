@@ -157,6 +157,7 @@ PHP;
 namespace {$app}\\Controllers;
 
 use {$app}\\Models\\Todo;
+use Dr2g\ErpLibs\Cache\CachesResponses;
 use Dr2g\ErpLibs\Exceptions\ValidationException;
 use Dr2g\ErpLibs\Routing\Exception\NotFoundException;
 use Dr2g\ErpLibs\Routing\Request;
@@ -167,11 +168,18 @@ use Dr2g\ErpLibs\Routing\Response;
  */
 class TodoController
 {
+    use CachesResponses;
+
     public function index(Request \$request): mixed
     {
+        // Listado cacheado (CACHE_DRIVER=redis en .env). ?refresh=1 fuerza recarga.
+        if (\$this->bypassCache(\$request)) {
+            \$this->forgetCache(['todos']);
+        }
+
         return \$this->render(\$request, 'todo.index', [
             'title' => 'Todolist',
-            'todos' => Todo::all(),
+            'todos' => \$this->cached('all', static fn (): array => Todo::all(), tags: ['todos'], ttl: 60),
         ]);
     }
 
@@ -204,6 +212,8 @@ class TodoController
             ])->withStatus(422);
         }
 
+        \$this->forgetCache(['todos']);
+
         return Response::redirect('/todos', 303);
     }
 
@@ -228,6 +238,8 @@ class TodoController
             ])->withStatus(422);
         }
 
+        \$this->forgetCache(['todos']);
+
         return Response::redirect('/todos', 303);
     }
 
@@ -235,12 +247,16 @@ class TodoController
     {
         \$this->find(\$id)->toggle();
 
+        \$this->forgetCache(['todos']);
+
         return Response::redirect('/todos', 303);
     }
 
     public function destroy(Request \$request, int \$id): Response
     {
         \$this->find(\$id)->delete();
+
+        \$this->forgetCache(['todos']);
 
         return Response::redirect('/todos', 303);
     }

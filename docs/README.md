@@ -5,6 +5,7 @@
 | [`../README.md`](../README.md) | Instalación, configuración y uso de cada subsistema |
 | [`../CHANGELOG.md`](../CHANGELOG.md) | Versiones y cambios |
 | [`routing.md`](routing.md) | Router HTTP: rutas, grupos, middleware, recursos RESTful |
+| [`cache.md`](cache.md) | Caché Redis/archivo/array integrada en controllers |
 | [`app-scaffold.md`](app-scaffold.md) | `new:app`, vistas y layout del proyecto generado |
 | [`security.md`](security.md) | Checklist OWASP Top 10 |
 | [`performance.md`](performance.md) | Benchmarks reproducibles |

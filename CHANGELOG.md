@@ -6,6 +6,10 @@ Todas las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Añadido
 
+- **Cache**: `CacheManager` (driver `array|file|redis` por entorno), trait `CachesResponses`
+  para controllers, `CachedController`, caché automática en `ApiCrud::index` con
+  invalidación en escrituras y `Redis\RedisConnection` (cliente RESP sin `ext-redis`).
+  Documentación en `docs/cache.md`.
 - **Api**: `Dr2g\ErpLibs\Api\ApiCrud` — CRUD REST especializado (paginación,
   orden, búsqueda, filtros, validación 422, mass-assignment, `Location`, `204`) y
   `Dr2g\ErpLibs\Routing\ApiProblem` para errores JSON.

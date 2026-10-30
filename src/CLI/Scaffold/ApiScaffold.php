@@ -60,6 +60,8 @@ class ApiKernel
 
     private Router \$router;
 
+    private ?CacheManager \$cache = null;
+
     /**
      * @param array<string, mixed> \$config
      */
@@ -132,9 +134,20 @@ class ApiKernel
 
     public function handle(?Request \$request = null): Response
     {
-        \$request = (\$request ?? Request::fromGlobals())->withAttributes(['kernel' => \$this]);
+        \$request = (\$request ?? Request::fromGlobals())->withAttributes([
+            'kernel' => \$this,
+            'cache' => \$this->cache(),
+        ]);
 
         return \$this->router->dispatch(\$request);
+    }
+
+    /**
+     * Sistema de caché del API (CACHE_DRIVER=redis|file|array).
+     */
+    public function cache(): CacheManager
+    {
+        return \$this->cache ??= CacheManager::fromEnvironment();
     }
 
     /**
