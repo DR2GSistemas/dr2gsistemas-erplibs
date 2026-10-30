@@ -53,11 +53,8 @@ spl_autoload_register(static function (string $class) use ($project, $psr4): voi
     }
 });
 
-// El scaffold mapea {Ns}\App\ => app/, así que la clase raíz es {Ns}\App.
+// El scaffold mapea {Ns}\\ => src/, así que la raíz del namespace es {Ns}.
 $namespace = rtrim((string) array_key_first($psr4), '\\');
-if (!str_ends_with($namespace, '\\App')) {
-    $namespace .= '\\App';
-}
 $kernelClass = $namespace . '\\Http\\Kernel';
 $controllerClass = $namespace . '\\Controllers\\TodoController';
 

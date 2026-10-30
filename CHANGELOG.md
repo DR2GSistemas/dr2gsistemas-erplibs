@@ -8,6 +8,23 @@ Todas las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
 Pendiente de la próxima versión.
 
+## [1.3.0] — 2026-10-30
+
+### Cambiado
+
+- **CLI `app:create` / `new:app`**: el código PHP del proyecto generado ahora vive
+  en `src/` (`src/Controllers`, `src/Http`, `src/Models`, `src/Support`) en lugar
+  de `app/`. `routes/`, `views/`, `config/`, `migrations/`, `tests/`, `bin/` y
+  `public/` siguen en la raíz del proyecto.
+- **Scaffold**: el `composer.json` generado mapea el namespace raíz directamente a
+  `src/` (`"Acme\\": "src/"`), sin el segmento `App` intermedio. Las clases pasan
+  de `Acme\App\Controllers\HomeController` a `Acme\Controllers\HomeController`.
+
+> **Nota de migración**: los proyectos generados con versiones anteriores conservan
+> la estructura `app/` + `{Ns}\App\`; para adoptar la nueva basta con mover el
+> código a `src/`, quitar el segmento `App` de los namespaces y actualizar el
+> mapeo `autoload.psr-4` del `composer.json`.
+
 ## [1.2.0] — 2026-10-30
 
 ### Añadido

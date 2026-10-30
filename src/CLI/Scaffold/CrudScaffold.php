@@ -19,9 +19,9 @@ final class CrudScaffold
         $app = $namespace;
 
         $files = [
-            'app/Models/Todo.php' => self::model($app),
+            'src/Models/Todo.php' => self::model($app),
             'migrations/2026_01_01_000000_create_todos_table.php' => self::migration($app),
-            'app/Support/Database.php' => self::database($app),
+            'src/Support/Database.php' => self::database($app),
         ];
 
         if (!$withWeb) {
@@ -31,7 +31,7 @@ final class CrudScaffold
 
         return $files + [
             'routes/todo.php' => CrudScaffold::routes($namespace),
-            'app/Controllers/TodoController.php' => self::controller($app),
+            'src/Controllers/TodoController.php' => self::controller($app),
             'views/todo/index.php' => self::indexView($app),
             'views/todo/form.php' => self::formView($app),
             'views/todo/show.php' => self::showView($app),

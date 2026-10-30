@@ -116,13 +116,13 @@ class TodoController
 
 | Archivo | Contenido |
 | --- | --- |
-| `app/Models/Todo.php` | modelo con `title` (requerido, 3–200), `done`, `toggle()`, `isDone()` |
+| `src/Models/Todo.php` | modelo con `title` (requerido, 3–200), `done`, `toggle()`, `isDone()` |
 | `migrations/..._create_todos_table.php` | tabla `todos` (SQLite/MySQL) |
-| `app/Controllers/TodoController.php` | index, show, create, store, edit, update, toggle, destroy |
+| `src/Controllers/TodoController.php` | index, show, create, store, edit, update, toggle, destroy |
 | `views/todo/{index,form,show}.php` | listado, formulario y detalle |
 | `routes/todo.php` | 8 rutas POST/GET |
 | `tests/Feature/TodoCrudTest.php` | CRUD completo sobre SQLite en memoria |
-| `app/Support/Database.php` | resolución de la conexión |
+| `src/Support/Database.php` | resolución de la conexión |
 
 ## Base de datos del proyecto generado
 
@@ -132,14 +132,15 @@ class TodoController
 
 ## PSR-4 del proyecto generado
 
-Los archivos viven en `app/` con el namespace `{Ns}\App\...`, y el
-`composer.json` mapea:
+Todo el código PHP vive en `src/` con el namespace `{Ns}\...` (sin el segmento
+`App`), y el `composer.json` mapea:
 
 ```json
-"psr-4": { "Proyect001\App\": "app/" }
+"psr-4": { "Proyect001\": "src/" }
 ```
 
-Así `app/Http/Kernel.php` corresponde a `Proyect001\App\Http\Kernel`.
+Así `src/Http/Kernel.php` corresponde a `Proyect001\Http\Kernel`.
+Las rutas, vistas, migraciones, config y tests se quedan en la raíz del proyecto.
 
 ## Verificación sin navegador
 

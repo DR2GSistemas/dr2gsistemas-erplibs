@@ -86,7 +86,7 @@ final class AppScaffold
      */
     public static function files(string $namespace, string $name, string $viewPath, bool $withCrud = false, bool $api = false): array
     {
-        // {Ns}\Http\Kernel -> app/Http/Kernel.php (PSR-4 {Ns}\ => app/)
+        // {Ns}\Http\Kernel -> src/Http/Kernel.php (PSR-4 {Ns}\ => src/)
         $app = $namespace;
 
         $files = [
@@ -112,8 +112,8 @@ final class AppScaffold
 
         return $files + [
             'routes/web.php' => self::routes($namespace, $withCrud),
-            'app/Controllers/HomeController.php' => self::controller($app),
-            'app/Http/Kernel.php' => self::kernel($app),
+            'src/Controllers/HomeController.php' => self::controller($app),
+            'src/Http/Kernel.php' => self::kernel($app),
             'views/layout.php' => self::layout($name),
             'views/home/index.php' => self::homeView($app),
             'views/partials/nav.php' => self::nav(),
@@ -149,7 +149,7 @@ final class AppScaffold
     ],
     "autoload": {
         "psr-4": {
-            "{$phpNamespace}": "app/"
+            "{$phpNamespace}": "src/"
         }
     },
     "minimum-stability": "dev",
@@ -901,12 +901,20 @@ Abre <http://localhost:8080>.
 ## Estructura
 
 ```
-app/Controllers   controladores (namespace {$namespace}\\\\App\\\\Controllers)
-app/Http          Kernel: router + renderer + errores
+src/Controllers   controladores (namespace {$namespace}\\\\Controllers)
+src/Http          Kernel: router + renderer + errores
+src/Models        modelos del ORM
+src/Support       utilidades propias del proyecto
 routes/web.php    rutas web
 views/            vistas PHP (layout.php + home/index.php)
 public/index.php  front controller
 bin/app           CLI (delega en vendor/bin/erplibs)
+```
+
+Todo el código PHP vive en `src/`, mapeado en `composer.json` por PSR-4:
+
+```json
+"autoload": { "psr-4": { "{$namespace}\\\\": "src/" } }
 ```
 
 ## Vistas
@@ -924,7 +932,7 @@ El controlador devuelve `\$renderer->render('home.index', \$data)`. La vista
 ## Rutas
 
 ```php
-\$kernel->router()->get('/sus', '{$namespace}\\\\App\\\\Controllers\\\\HomeController@index');
+\$kernel->router()->get('/sus', '{$namespace}\\\\Controllers\\\\HomeController@index');
 ```
 
 ## Base de datos

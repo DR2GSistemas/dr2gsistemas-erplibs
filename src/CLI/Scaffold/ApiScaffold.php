@@ -18,8 +18,8 @@ final class ApiScaffold
         $app = $namespace;
 
         $files = [
-            'app/Http/ApiKernel.php' => self::kernel($app),
-            'app/Controllers/Api/HealthController.php' => self::healthController($app),
+            'src/Http/ApiKernel.php' => self::kernel($app),
+            'src/Controllers/Api/HealthController.php' => self::healthController($app),
             'views/errors/api-404.php' => self::errorView(),
             'tests/Feature/ApiHealthTest.php' => self::healthTest($app),
             'docs/api.md' => self::documentation($namespace),
@@ -27,8 +27,8 @@ final class ApiScaffold
 
         if ($withResource) {
             $files += [
-                'app/Controllers/Api/TodoController.php' => self::resourceController($app),
-                'app/Http/Middleware/JsonResponse.php' => self::jsonMiddleware($app),
+                'src/Controllers/Api/TodoController.php' => self::resourceController($app),
+                'src/Http/Middleware/JsonResponse.php' => self::jsonMiddleware($app),
                 'tests/Feature/ApiTodoCrudTest.php' => self::resourceTest($app),
             ];
         }
@@ -642,7 +642,7 @@ Respuesta:
 
 ## Extender el CRUD
 
-`app/Controllers/Api/TodoController.php` extiende `Dr2g\\ErpLibs\\Api\\ApiCrud`
+`src/Controllers/Api/TodoController.php` extiende `Dr2g\\ErpLibs\\Api\\ApiCrud`
 y sólo declara `model()`, `rules()`, `fillable()`, `sortable()`, `filters()`,
 `visible()` y las rutas base. Para un recurso nuevo, copia el controlador y
 añade sus rutas en `routes/api.php`.

@@ -38,8 +38,8 @@ final class NewAppCommandTest extends TestCase
         $created = (new AppGenerator($this->base))->generate('Acme', 'Acme ERP');
 
         self::assertContains('routes/web.php', $created);
-        self::assertContains('app/Controllers/HomeController.php', $created);
-        self::assertContains('app/Http/Kernel.php', $created);
+        self::assertContains('src/Controllers/HomeController.php', $created);
+        self::assertContains('src/Http/Kernel.php', $created);
         self::assertContains('views/layout.php', $created);
         self::assertContains('views/home/index.php', $created);
         self::assertContains('views/errors/404.php', $created);
@@ -58,12 +58,12 @@ final class NewAppCommandTest extends TestCase
     {
         (new AppGenerator($this->base))->generate('Acme\\Erp', 'Acme');
 
-        $controller = (string) file_get_contents($this->base . '/app/Controllers/HomeController.php');
+        $controller = (string) file_get_contents($this->base . '/src/Controllers/HomeController.php');
         $composer = (string) file_get_contents($this->base . '/composer.json');
         $routes = (string) file_get_contents($this->base . '/routes/web.php');
 
         self::assertStringContainsString('namespace Acme\\Erp\\Controllers;', $controller);
-        self::assertStringContainsString('"Acme\\\\Erp\\\\": "app/"', $composer);
+        self::assertStringContainsString('"Acme\\\\Erp\\\\": "src/"', $composer);
         self::assertStringContainsString('Acme\\Erp\\Controllers\\HomeController@index', $routes);
     }
 
@@ -112,7 +112,7 @@ final class NewAppCommandTest extends TestCase
         $composer = json_decode((string) file_get_contents($this->base . '/composer.json'), true, 512, JSON_THROW_ON_ERROR);
 
         self::assertSame('acme-erp/acme-erp', $composer['name']);
-        self::assertSame('app/', $composer['autoload']['psr-4']['Acme\\Erp\\']);
+        self::assertSame('src/', $composer['autoload']['psr-4']['Acme\\Erp\\']);
     }
 
     public function testGeneratedPhpFilesAreSyntacticallyValid(): void

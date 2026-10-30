@@ -39,10 +39,10 @@ final class AppCreateCrudTest extends TestCase
         $created = (new AppGenerator($this->base))->generate(null, 'proyect001', ['crud' => 'todo']);
 
         foreach ([
-            'app/Models/Todo.php',
+            'src/Models/Todo.php',
             'migrations/2026_01_01_000000_create_todos_table.php',
-            'app/Controllers/TodoController.php',
-            'app/Support/Database.php',
+            'src/Controllers/TodoController.php',
+            'src/Support/Database.php',
             'views/todo/index.php',
             'views/todo/form.php',
             'views/todo/show.php',
@@ -58,7 +58,7 @@ final class AppCreateCrudTest extends TestCase
     {
         (new AppGenerator($this->base))->generate(null, 'proyect001', ['crud' => 'todo']);
 
-        $model = (string) file_get_contents($this->base . '/app/Models/Todo.php');
+        $model = (string) file_get_contents($this->base . '/src/Models/Todo.php');
         $routes = (string) file_get_contents($this->base . '/routes/todo.php');
         $web = (string) file_get_contents($this->base . '/routes/web.php');
 
@@ -82,7 +82,7 @@ final class AppCreateCrudTest extends TestCase
     {
         $created = (new AppGenerator($this->base))->generate('Acme', 'Acme');
 
-        self::assertNotContains('app/Models/Todo.php', $created);
+        self::assertNotContains('src/Models/Todo.php', $created);
         self::assertNotContains('routes/todo.php', $created);
         self::assertFileExists($this->base . '/routes/web.php');
     }

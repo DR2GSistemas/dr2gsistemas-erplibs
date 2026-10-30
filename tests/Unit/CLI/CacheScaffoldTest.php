@@ -53,7 +53,7 @@ final class CacheScaffoldTest extends TestCase
     {
         (new AppGenerator($this->base))->generate(null, 'proyect001', ['crud' => 'todo']);
 
-        $controller = (string) file_get_contents($this->base . '/app/Controllers/TodoController.php');
+        $controller = (string) file_get_contents($this->base . '/src/Controllers/TodoController.php');
 
         self::assertStringContainsString('use Dr2g\\ErpLibs\\Cache\\CachesResponses;', $controller);
         self::assertStringContainsString('use CachesResponses;', $controller);
@@ -65,7 +65,7 @@ final class CacheScaffoldTest extends TestCase
     {
         (new AppGenerator($this->base))->generate(null, 'proyect001', ['crud' => 'todo', 'api' => true]);
 
-        $kernel = (string) file_get_contents($this->base . '/app/Http/ApiKernel.php');
+        $kernel = (string) file_get_contents($this->base . '/src/Http/ApiKernel.php');
 
         self::assertStringContainsString('use Dr2g\\ErpLibs\\Cache\\CacheManager;', $kernel);
         self::assertStringContainsString('public function cache(): CacheManager', $kernel);
@@ -76,7 +76,7 @@ final class CacheScaffoldTest extends TestCase
     {
         (new AppGenerator($this->base))->generate(null, 'proyect001', ['api' => true]);
 
-        $kernel = (string) file_get_contents($this->base . '/app/Http/ApiKernel.php');
+        $kernel = (string) file_get_contents($this->base . '/src/Http/ApiKernel.php');
 
         self::assertStringContainsString('setErrorHandler(function (', $kernel);
         self::assertStringNotContainsString('setErrorHandler(static function', $kernel);
@@ -86,9 +86,9 @@ final class CacheScaffoldTest extends TestCase
     {
         (new AppGenerator($this->base))->generate(null, 'proyect001', ['crud' => 'todo', 'api' => true]);
 
-        self::assertFileExists($this->base . '/app/Controllers/Api/TodoController.php');
+        self::assertFileExists($this->base . '/src/Controllers/Api/TodoController.php');
 
-        $controller = (string) file_get_contents($this->base . '/app/Controllers/Api/TodoController.php');
+        $controller = (string) file_get_contents($this->base . '/src/Controllers/Api/TodoController.php');
         self::assertStringContainsString('extends ApiCrud', $controller);
         self::assertFileExists($this->base . '/docs/api.md');
     }

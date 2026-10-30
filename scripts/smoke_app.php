@@ -42,7 +42,7 @@ spl_autoload_register(static function (string $class) use ($app, $psr4): void {
         $suffix = str_replace('\\', '/', substr($class, strlen($prefix)));
         $base = $app . '/' . trim($relative, '/');
 
-        // El scaffold organiza por dominio: {Ns}\App\Http\Kernel -> app/Http/Kernel.php
+        // El scaffold organiza el código PHP bajo src/: {Ns}\Http\Kernel -> src/Http/Kernel.php
         $candidates = [
             $base . '/' . $suffix . '.php',
             $base . '/' . preg_replace('#^App/#', '', $suffix) . '.php',
@@ -58,11 +58,8 @@ spl_autoload_register(static function (string $class) use ($app, $psr4): void {
     }
 });
 
-// El composer.json mapea {Ns}\\App\\ => app/, así que la raíz es {Ns}\\App.
+// El composer.json mapea {Ns}\\ => src/, así que la raíz del namespace es {Ns}.
 $namespace = rtrim((string) array_key_first($psr4), '\\');
-if (!str_ends_with($namespace, '\\App')) {
-    $namespace .= '\\App';
-}
 $kernelClass = $namespace . '\\Http\\Kernel';
 $controllerClass = $namespace . '\\Controllers\\HomeController';
 
