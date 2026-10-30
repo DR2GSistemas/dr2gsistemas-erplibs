@@ -14,16 +14,24 @@ final class CrudScaffold
     /**
      * @return array<string, string> ruta relativa => contenido
      */
-    public static function files(string $namespace): array
+    public static function files(string $namespace, bool $withWeb = true): array
     {
         $app = $namespace . '\\App';
 
-        return [
+        $files = [
             'app/Models/Todo.php' => self::model($app),
-            'routes/todo.php' => CrudScaffold::routes($namespace),
             'migrations/2026_01_01_000000_create_todos_table.php' => self::migration($app),
-            'app/Controllers/TodoController.php' => self::controller($app),
             'app/Support/Database.php' => self::database($app),
+        ];
+
+        if (!$withWeb) {
+            // Modo API: sólo modelo, migración y soporte de BD.
+            return $files;
+        }
+
+        return $files + [
+            'routes/todo.php' => CrudScaffold::routes($namespace),
+            'app/Controllers/TodoController.php' => self::controller($app),
             'views/todo/index.php' => self::indexView($app),
             'views/todo/form.php' => self::formView($app),
             'views/todo/show.php' => self::showView($app),

@@ -41,13 +41,9 @@ final class Request
             $headers['content-type'] = (string) $_SERVER['CONTENT_TYPE'];
         }
 
-        $query = [];
-
-        foreach ($_GET as $key => $value) {
-            if (is_scalar($value)) {
-                $query[(string) $key] = (string) $value;
-            }
-        }
+        // Array-copy: conserva subclaves (filter[done]) sin forzar el tipo.
+        /** @var array<string, mixed> $query */
+        $query = $_GET;
 
         return new self(
             method: $method,

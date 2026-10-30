@@ -84,20 +84,33 @@ final class AppScaffold
     /**
      * @return array<string, string> ruta relativa => contenido
      */
-    public static function files(string $namespace, string $name, string $viewPath, bool $withCrud = false): array
+    public static function files(string $namespace, string $name, string $viewPath, bool $withCrud = false, bool $api = false): array
     {
-        // {Ns}\App\Http\Kernel -> app/Http/Kernel.php (PSR-4 {Ns}\ => app/)
+        // {Ns}\App\Http\Kernel -> app/Http/Kernel.php (PSR-4 {Ns}\App\ => app/)
         $app = $namespace . '\\App';
 
-        return [
+        $files = [
             'composer.json' => self::composer($namespace, $name),
-            'bootstrap.php' => self::bootstrap($namespace),
+            'bootstrap.php' => self::bootstrap($namespace, $api),
             'bin/app' => self::bin(),
             'config/app.php' => self::configApp($viewPath),
             'config/database.php' => self::configDatabase(),
             '.env.template' => self::envTemplate($namespace, $name, $withCrud),
             '.env' => self::envFile($namespace, $name, $withCrud),
             '.env.local.template' => self::envLocalTemplate($namespace, $name),
+            'public/index.php' => self::publicIndex($namespace, $api),
+            'public/.htaccess' => self::htaccess(),
+            '.gitignore' => self::gitignore(),
+            'README.md' => self::readme($namespace, $name, $api),
+            'tests/Unit/App/KernelTest.php' => self::test($app),
+        ];
+
+        if ($api) {
+            // API: sin vistas ni controlador web; el kernel y las rutas los añade ApiScaffold.
+            return $files;
+        }
+
+        return $files + [
             'routes/web.php' => self::routes($namespace, $withCrud),
             'app/Controllers/HomeController.php' => self::controller($app),
             'app/Http/Kernel.php' => self::kernel($app),
@@ -107,11 +120,6 @@ final class AppScaffold
             'views/errors/404.php' => self::errorView(404, 'Página no encontrada'),
             'views/errors/405.php' => self::errorView(405, 'Método no permitido'),
             'views/errors/500.php' => self::errorView(500, 'Error interno'),
-            'public/index.php' => self::publicIndex($namespace),
-            'public/.htaccess' => self::htaccess(),
-            'tests/Unit/App/KernelTest.php' => self::test($app),
-            '.gitignore' => self::gitignore(),
-            'README.md' => self::readme($namespace, $name),
         ];
     }
 
@@ -154,8 +162,12 @@ final class AppScaffold
 JSON;
     }
 
-    public static function bootstrap(string $namespace): string
+    public static function bootstrap(string $namespace, bool $api = false): string
     {
+        $kernelClass = $api ? 'ApiKernel' : 'Kernel';
+        $rendererUse = $api ? '' : "use Dr2g\\ErpLibs\\View\\Renderer;\n";
+        $kernelLine = self::kernelLine($kernelClass, $api);
+
         return <<<PHP
 <?php
 
@@ -166,8 +178,7 @@ JSON;
 use Dr2g\ErpLibs\Config\DotEnv;
 use Dr2g\ErpLibs\Core\DatabaseManager;
 use Dr2g\ErpLibs\Models\Model;
-use Dr2g\ErpLibs\View\Renderer;
-use {$namespace}\App\Http\Kernel;
+{$rendererUse}use {$namespace}\\App\\Http\\{$kernelClass};
 
 require_once __DIR__ . '/vendor/autoload.php';
 
@@ -182,11 +193,21 @@ date_default_timezone_set((string) (\$config['timezone'] ?? 'UTC'));
 
 Model::setDbManager(new DatabaseManager(\$database));
 
-\$kernel = new Kernel(new Renderer([\$config['views']]), \$config);
+{$kernelLine}
 
 return \$kernel;
 
 PHP;
+    }
+
+    private static function kernelLine(string $kernelClass, bool $api): string
+    {
+        // Sin escapes: el heredoc interpola $kernel y $config al generar el archivo.
+        if ($api) {
+            return '$kernel = new ' . $kernelClass . '($config);';
+        }
+
+        return '$kernel = new ' . $kernelClass . '(new Renderer([$config[\'views\']]), $config);';
     }
 
     public static function bin(): string
@@ -748,22 +769,30 @@ PHP;
 PHP;
     }
 
-    public static function publicIndex(string $namespace): string
+    public static function publicIndex(string $namespace, bool $api = false): string
     {
+        $kernelClass = $api ? 'ApiKernel' : 'Kernel';
+        $routes = $api ? "'/routes'" : "'/routes'";
+        $hint = $api
+            ? ' * API: todas las rutas viven bajo /api/v1 y responden JSON.'
+            : ' * Front controller de la aplicación web.';
+
         return <<<PHP
 <?php
 
 /*
- * Front controller. Con el servidor embebido de PHP:
- *   php -S localhost:8080 -t public public/index.php
+ * {$hint}
+ *
+ * Con el servidor embebido de PHP:
+ *   php bin/app app:serve --port 8000
  */
 
-use {$namespace}\\App\\Http\\Kernel;
+use {$namespace}\\App\\Http\\{$kernelClass};
 
-/** @var Kernel \$kernel */
+/** @var {$kernelClass} \$kernel */
 \$kernel = require dirname(__DIR__) . '/bootstrap.php';
 
-\$kernel->loadRoutes(dirname(__DIR__) . '/routes')->run();
+\$kernel->loadRoutes(dirname(__DIR__) . {$routes})->run();
 
 PHP;
     }
@@ -841,7 +870,7 @@ composer.lock
 TXT;
     }
 
-    public static function readme(string $namespace, string $name): string
+    public static function readme(string $namespace, string $name, bool $api = false): string
     {
         return <<<MD
 # {$name}

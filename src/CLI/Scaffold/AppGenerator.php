@@ -19,7 +19,7 @@ final class AppGenerator
     }
 
     /**
-     * @param array{force?: bool, dryRun?: bool, crud?: string|null} $options
+     * @param array{force?: bool, dryRun?: bool, crud?: string|null, api?: bool} $options
      * @return list<string> rutas relativas creadas
      */
     public function generate(?string $namespace = null, ?string $name = null, array $options = []): array
@@ -37,13 +37,33 @@ final class AppGenerator
 
         $crud = $options['crud'] ?? null;
         $withCrud = $crud !== null && $crud !== '';
+        $api = (bool) ($options['api'] ?? false);
 
         // El flag viaja a todas las plantillas (rutas, .env con SEED_*, etc.).
-        $files = AppScaffold::files($namespace, trim($name), $this->basePath, $withCrud);
+        if ($api) {
+            // Modo API: kernel JSON, sin vistas; el recurso de ejemplo es opcional.
+            $files = AppScaffold::files($namespace, trim($name), $this->basePath, $withCrud, api: true);
+            $files['routes/api.php'] = ApiScaffold::routes($namespace, $withCrud);
+            $files['app/Http/ApiKernel.php'] = ApiScaffold::kernel($namespace . '\\App');
+            $files['app/Controllers/Api/HealthController.php'] = ApiScaffold::healthController($namespace . '\\App');
+            $files['app/Http/Middleware/JsonResponse.php'] = ApiScaffold::jsonMiddleware($namespace . '\\App');
+            $files['docs/api.md'] = ApiScaffold::documentation($namespace);
+            $files['tests/Feature/ApiHealthTest.php'] = ApiScaffold::healthTest($namespace . '\\App');
 
-        if ($withCrud) {
+            if ($withCrud) {
+                // El recurso de ejemplo necesita modelo, migración y soporte de BD.
+                $files += CrudScaffold::files($namespace, false);
+                $files['app/Controllers/Api/TodoController.php'] = ApiScaffold::resourceController($namespace . '\\App');
+                $files['tests/Feature/ApiTodoCrudTest.php'] = ApiScaffold::resourceTest($namespace . '\\App');
+            }
+        } else {
+            $files = AppScaffold::files($namespace, trim($name), $this->basePath, $withCrud);
+        }
+
+        // En modo API el modelo/migración se reutilizan, pero sin vistas ni rutas web.
+        if ($withCrud && !$api) {
             $files += match ($crud) {
-                'todo' => CrudScaffold::files($namespace),
+                'todo' => CrudScaffold::files($namespace, true),
                 default => throw new \InvalidArgumentException("CRUD no soportado: '{$crud}'. Disponibles: todo."),
             };
         }

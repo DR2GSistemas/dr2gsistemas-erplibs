@@ -6,6 +6,11 @@ Todas las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Añadido
 
+- **Api**: `Dr2g\ErpLibs\Api\ApiCrud` — CRUD REST especializado (paginación,
+  orden, búsqueda, filtros, validación 422, mass-assignment, `Location`, `204`) y
+  `Dr2g\ErpLibs\Routing\ApiProblem` para errores JSON.
+- **CLI `app:create --api`**: servidor API con `ApiKernel`, middleware JSON,
+  health check, controller `ApiCrud` de ejemplo y `docs/api.md`.
 - **Routing**: módulo HTTP completo (`Dr2g\ErpLibs\Routing`): `Router`, `Route`,
   `RouteCollection`, `Request`, `Response`, `Controller`, `RouteMatch` y
   excepciones de routing (404/405/409/422). Grupos con middleware aislado,

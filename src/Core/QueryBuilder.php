@@ -61,6 +61,23 @@ class QueryBuilder
     }
 
     /**
+     * Fragmento SQL propio con placeholders. El llamador es responsable de que
+     * las columnas sean de confianza (nunca datos del cliente).
+     *
+     * @param list<mixed> $bindings
+     */
+    public function whereRaw(string $sql, array $bindings = []): self
+    {
+        $this->wheres[] = '(' . $sql . ')';
+
+        foreach ($bindings as $binding) {
+            $this->bindings[] = $binding;
+        }
+
+        return $this;
+    }
+
+    /**
      * @param list<mixed> $values
      */
     public function whereIn(string $column, array $values): self

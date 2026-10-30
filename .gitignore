@@ -6,3 +6,4 @@
 .phpstan-cache/
 .php-cs-fixer.cache
 composer.lock
+/compact/
