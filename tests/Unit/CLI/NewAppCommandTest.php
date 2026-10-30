@@ -1,0 +1,139 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Dr2g\ErpLibs\Tests\Unit\CLI;
+
+use Dr2g\ErpLibs\CLI\Scaffold\AppGenerator;
+use Dr2g\ErpLibs\CLI\Scaffold\AppScaffold;
+use PHPUnit\Framework\TestCase;
+
+final class NewAppCommandTest extends TestCase
+{
+    private string $base;
+
+    protected function setUp(): void
+    {
+        $this->base = sys_get_temp_dir() . '/dr2g_app_' . bin2hex(random_bytes(4));
+    }
+
+    protected function tearDown(): void
+    {
+        if (is_dir($this->base)) {
+            $files = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($this->base, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::CHILD_FIRST
+            );
+
+            foreach ($files as $file) {
+                $file->isDir() ? rmdir($file->getPathname()) : unlink($file->getPathname());
+            }
+
+            rmdir($this->base);
+        }
+    }
+
+    public function testGeneratesRouteControllerAndViews(): void
+    {
+        $created = (new AppGenerator($this->base))->generate('Acme', 'Acme ERP');
+
+        self::assertContains('routes/web.php', $created);
+        self::assertContains('app/Controllers/HomeController.php', $created);
+        self::assertContains('app/Http/Kernel.php', $created);
+        self::assertContains('views/layout.php', $created);
+        self::assertContains('views/home/index.php', $created);
+        self::assertContains('views/errors/404.php', $created);
+
+        foreach ($created as $relative) {
+            self::assertFileExists($this->base . '/' . $relative);
+
+            if (str_ends_with($relative, '.php')) {
+                self::assertSame('', (string) shell_exec('php -l ' . escapeshellarg($this->base . '/' . $relative) . ' 2>&1 | grep -v "No syntax errors"') === ''
+                    ? '' : '', $relative . ' lint');
+            }
+        }
+    }
+
+    public function testGeneratedFilesUseTheNamespace(): void
+    {
+        (new AppGenerator($this->base))->generate('Acme\\Erp', 'Acme');
+
+        $controller = (string) file_get_contents($this->base . '/app/Controllers/HomeController.php');
+        $composer = (string) file_get_contents($this->base . '/composer.json');
+        $routes = (string) file_get_contents($this->base . '/routes/web.php');
+
+        self::assertStringContainsString('namespace Acme\\Erp\\App\\Controllers;', $controller);
+        self::assertStringContainsString('"Acme\\\\Erp\\\\": "app/"', $composer);
+        self::assertStringContainsString('Acme\\Erp\\App\\Controllers\\HomeController@index', $routes);
+    }
+
+    public function testRefusesNonEmptyDirectoryWithoutForce(): void
+    {
+        mkdir($this->base, 0755, true);
+        file_put_contents($this->base . '/existing.txt', 'x');
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('no está vacío');
+
+        (new AppGenerator($this->base))->generate('Acme');
+    }
+
+    public function testForceOverwritesExistingFiles(): void
+    {
+        mkdir($this->base, 0755, true);
+        file_put_contents($this->base . '/existing.txt', 'x');
+
+        $created = (new AppGenerator($this->base))->generate('Acme', null, ['force' => true]);
+
+        self::assertNotEmpty($created);
+        self::assertFileExists($this->base . '/existing.txt');
+        self::assertFileExists($this->base . '/routes/web.php');
+    }
+
+    public function testDryRunCreatesNothing(): void
+    {
+        $created = (new AppGenerator($this->base))->generate('Acme', null, ['dryRun' => true]);
+
+        self::assertNotEmpty($created);
+        self::assertDirectoryDoesNotExist($this->base);
+    }
+
+    public function testInvalidNamespaceIsRejected(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        (new AppGenerator($this->base))->generate('acme-erp');
+    }
+
+    public function testGeneratedComposerJsonIsValidJson(): void
+    {
+        (new AppGenerator($this->base))->generate('Acme\\Erp', 'Acme ERP');
+
+        $composer = json_decode((string) file_get_contents($this->base . '/composer.json'), true, 512, JSON_THROW_ON_ERROR);
+
+        self::assertSame('acme-erp/acme-erp', $composer['name']);
+        self::assertSame('app/', $composer['autoload']['psr-4']['Acme\\Erp\\']);
+    }
+
+    public function testGeneratedPhpFilesAreSyntacticallyValid(): void
+    {
+        $created = (new AppGenerator($this->base))->generate('Acme');
+
+        foreach ($created as $relative) {
+            if (!str_ends_with($relative, '.php')) {
+                continue;
+            }
+
+            $file = $this->base . '/' . $relative;
+            exec(escapeshellarg(PHP_BINARY) . ' -l ' . escapeshellarg($file) . ' 2>&1', $output, $exitCode);
+
+            self::assertSame(0, $exitCode, "{$relative}: " . implode(' ', $output));
+        }
+    }
+
+    public function testPackageNameIsSlugged(): void
+    {
+        self::assertSame('acme-erp', AppScaffold::slug('Acme ERP'));
+        self::assertSame('app', AppScaffold::slug('---'));
+    }
+}

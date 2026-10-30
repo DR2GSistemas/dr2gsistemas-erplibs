@@ -11,6 +11,9 @@ Todas las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
   excepciones de routing (404/405/409/422). Grupos con middleware aislado,
   recursos RESTful, rutas con nombre y `url()`, ejemplo en `examples/routes.php`
   y guía en `docs/routing.md`.
+- **View**: `Renderer` con `render()` y `layout()` para vistas PHP con layout.
+- **CLI `new:app`**: genera un proyecto con ruta, controlador, vistas y layout,
+  `bin/app`, `public/index.php`, tests y README (`docs/app-scaffold.md`).
 
 ## [1.0.0] — 2026-10-30
 
