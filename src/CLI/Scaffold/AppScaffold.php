@@ -93,8 +93,8 @@ final class AppScaffold
             'composer.json' => self::composer($namespace, $name),
             'bootstrap.php' => self::bootstrap($namespace, $api),
             'bin/app' => self::bin(),
-            'config/app.php' => self::configApp($viewPath),
-            'config/database.php' => self::configDatabase(),
+            'src/config/app.php' => self::configApp($viewPath),
+            'src/config/database.php' => self::configDatabase(),
             '.env.template' => self::envTemplate($namespace, $name, $withCrud),
             '.env' => self::envFile($namespace, $name, $withCrud),
             '.env.local.template' => self::envLocalTemplate($namespace, $name),
@@ -102,8 +102,12 @@ final class AppScaffold
             'public/.htaccess' => self::htaccess(),
             '.gitignore' => self::gitignore(),
             'README.md' => self::readme($namespace, $name, $api),
-            'tests/Unit/App/KernelTest.php' => self::test($app),
         ];
+
+        if (!$api) {
+            // El test del kernel web solo tiene sentido con vistas y HomeController.
+            $files['src/tests/Unit/App/KernelTest.php'] = self::test($app);
+        }
 
         if ($api) {
             // API: sin vistas ni controlador web; el kernel y las rutas los añade ApiScaffold.
@@ -111,15 +115,15 @@ final class AppScaffold
         }
 
         return $files + [
-            'routes/web.php' => self::routes($namespace, $withCrud),
+            'src/routes/web.php' => self::routes($namespace, $withCrud),
             'src/Controllers/HomeController.php' => self::controller($app),
             'src/Http/Kernel.php' => self::kernel($app),
-            'views/layout.php' => self::layout($name),
-            'views/home/index.php' => self::homeView($app),
-            'views/partials/nav.php' => self::nav(),
-            'views/errors/404.php' => self::errorView(404, 'Página no encontrada'),
-            'views/errors/405.php' => self::errorView(405, 'Método no permitido'),
-            'views/errors/500.php' => self::errorView(500, 'Error interno'),
+            'src/views/layout.php' => self::layout($name),
+            'src/views/home/index.php' => self::homeView($app),
+            'src/views/partials/nav.php' => self::nav(),
+            'src/views/errors/404.php' => self::errorView(404, 'Página no encontrada'),
+            'src/views/errors/405.php' => self::errorView(405, 'Método no permitido'),
+            'src/views/errors/500.php' => self::errorView(500, 'Error interno'),
         ];
     }
 
@@ -186,8 +190,8 @@ require_once __DIR__ . '/vendor/autoload.php';
 DotEnv::load(__DIR__ . '/.env');
 DotEnv::load(__DIR__ . '/.env.local');
 
-\$config = require __DIR__ . '/config/app.php';
-\$database = require __DIR__ . '/config/database.php';
+\$config = require __DIR__ . '/src/config/app.php';
+\$database = require __DIR__ . '/src/config/database.php';
 
 date_default_timezone_set((string) (\$config['timezone'] ?? 'UTC'));
 
@@ -420,7 +424,7 @@ return [
     ],
     // Base de datos del servidor embebido (sqlite:... o null para no preparar nada).
     'database' => getenv('APP_DATABASE') ?: (str_starts_with((string) (getenv('DB_CONNECTION') ?: 'sqlite'), 'sqlite')
-        ? 'sqlite:' . __DIR__ . '/../storage/app.sqlite'
+        ? 'sqlite:' . dirname(__DIR__, 2) . '/storage/app.sqlite'
         : null),
 ];
 
@@ -442,7 +446,7 @@ PHP;
 
 $env = static fn (string $key, string $default = ''): string => (string) (getenv($key) === false ? $default : getenv($key));
 
-$storage = __DIR__ . '/../storage';
+$storage = dirname(__DIR__, 2) . '/storage';
 
 if (!is_dir($storage)) {
     @mkdir($storage, 0755, true);
@@ -454,7 +458,7 @@ $dsn = $env('DB_DSN');
 if ($connection === 'sqlite') {
     $database = $env('DB_DATABASE', 'storage/app.sqlite');
     $absolute = str_starts_with($database, '/') || preg_match('#^[A-Za-z]:[\\/]#', $database) === 1;
-    $file = $absolute ? $database : dirname(__DIR__) . '/' . ltrim($database, '/');
+    $file = $absolute ? $database : dirname(__DIR__, 2) . '/' . ltrim($database, '/');
 
     return [
         'default' => 'sqlite',
@@ -669,7 +673,7 @@ class Kernel
         }
 
         try {
-            \$connection = Database::connect(require dirname(__DIR__, 2) . '/config/database.php');
+            \$connection = Database::connect(require dirname(__DIR__, 2) . '/src/config/database.php');
 
             \$connection->execute(
                 'CREATE TABLE IF NOT EXISTS todos (
@@ -760,7 +764,7 @@ PHP;
     <dt>Ruta</dt><dd><code><?= htmlspecialchars(\$route, ENT_QUOTES) ?></code></dd>
     <dt>Generada</dt><dd><code><?= htmlspecialchars(\$requestedAt, ENT_QUOTES) ?></code></dd>
 </dl>
-<p>Añade nuevas rutas en <code>routes/web.php</code>.</p>
+<p>Añade nuevas rutas en <code>src/routes/web.php</code>.</p>
 PHP;
     }
 
@@ -784,7 +788,7 @@ PHP;
     public static function publicIndex(string $namespace, bool $api = false): string
     {
         $kernelClass = $api ? 'ApiKernel' : 'Kernel';
-        $routes = $api ? "'/routes'" : "'/routes'";
+        $routes = $api ? "'/src/routes'" : "'/src/routes'";
         $hint = $api
             ? ' * API: todas las rutas viven bajo /api/v1 y responden JSON.'
             : ' * Front controller de la aplicación web.';
@@ -838,7 +842,8 @@ final class KernelTest extends TestCase
 {
     private function kernel(): Kernel
     {
-        return new Kernel(new Renderer([dirname(__DIR__, 3) . '/views']), ['debug' => false]);
+        // src/tests/Unit/App -> raíz del proyecto -> src/views
+        return new Kernel(new Renderer([dirname(__DIR__, 4) . '/src/views']), ['debug' => false]);
     }
 
     public function testHomeRendersTheView(): void
@@ -905,10 +910,13 @@ src/Controllers   controladores (namespace {$namespace}\\\\Controllers)
 src/Http          Kernel: router + renderer + errores
 src/Models        modelos del ORM
 src/Support       utilidades propias del proyecto
-routes/web.php    rutas web
-views/            vistas PHP (layout.php + home/index.php)
+src/routes        rutas web (web.php, api.php)
+src/views         vistas PHP (layout.php + home/index.php)
+src/config        configuración de la aplicación
+src/tests         tests Unit y Feature
 public/index.php  front controller
 bin/app           CLI (delega en vendor/bin/erplibs)
+migrations/       migraciones (php bin/app migrate)
 ```
 
 Todo el código PHP vive en `src/`, mapeado en `composer.json` por PSR-4:
@@ -937,7 +945,7 @@ El controlador devuelve `\$renderer->render('home.index', \$data)`. La vista
 
 ## Base de datos
 
-Configura `config/database.php` o exporta `DR2G_DB_HOST`, `DR2G_DB_NAME`,
+Configura `src/config/database.php` o exporta `DR2G_DB_HOST`, `DR2G_DB_NAME`,
 `DR2G_DB_USER`, `DR2G_DB_PASSWORD`.
 
 MD;

@@ -20,8 +20,8 @@ final class ApiScaffold
         $files = [
             'src/Http/ApiKernel.php' => self::kernel($app),
             'src/Controllers/Api/HealthController.php' => self::healthController($app),
-            'views/errors/api-404.php' => self::errorView(),
-            'tests/Feature/ApiHealthTest.php' => self::healthTest($app),
+            'src/views/errors/api-404.php' => self::errorView(),
+            'src/tests/Feature/ApiHealthTest.php' => self::healthTest($app),
             'docs/api.md' => self::documentation($namespace),
         ];
 
@@ -29,7 +29,7 @@ final class ApiScaffold
             $files += [
                 'src/Controllers/Api/TodoController.php' => self::resourceController($app),
                 'src/Http/Middleware/JsonResponse.php' => self::jsonMiddleware($app),
-                'tests/Feature/ApiTodoCrudTest.php' => self::resourceTest($app),
+                'src/tests/Feature/ApiTodoCrudTest.php' => self::resourceTest($app),
             ];
         }
 
@@ -170,7 +170,7 @@ class ApiKernel
         }
 
         try {
-            \$database = require dirname(__DIR__, 2) . '/config/database.php';
+            \$database = require dirname(__DIR__, 2) . '/src/config/database.php';
             \$connection = new \Dr2g\ErpLibs\Core\Connection(\$database['connections'][\$database['default']]);
 
             \$connection->execute(
@@ -449,8 +449,17 @@ final class ApiTodoCrudTest extends TestCase
      */
     private function call(string \$method, string \$path, array \$body = []): Response
     {
+        // Request::create() no parsea la URL: el query string va aparte.
+        \$query = [];
+        \$parts = explode('?', \$path, 2);
+
+        if (isset(\$parts[1])) {
+            parse_str(\$parts[1], \$query);
+            \$path = \$parts[0];
+        }
+
         \$headers = \$body === [] ? [] : ['Content-Type' => 'application/json'];
-        \$request = Request::create(\$method, \$path, body: \$body === [] ? '' : (string) json_encode(\$body), headers: \$headers);
+        \$request = Request::create(\$method, \$path, query: \$query, body: \$body === [] ? '' : (string) json_encode(\$body), headers: \$headers);
 
         return \$this->kernel->handle(\$request);
     }

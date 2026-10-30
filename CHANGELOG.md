@@ -8,6 +8,33 @@ Todas las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
 Pendiente de la próxima versión.
 
+## [1.4.0] — 2026-10-30
+
+### Cambiado
+
+- **CLI `app:create` / `new:app`**: todo lo de la aplicación vive ahora en `src/`.
+  Además de `Controllers`, `Http`, `Models` y `Support`, se mueven a `src/`
+  `routes/`, `views/`, `config/` y `tests/`. Sólo `public/` (docroot) y
+  `migrations/` (contrato de `make:migration` / `migrate`) quedan fuera.
+  Regla: *lo de la app en `src/`; fuera sólo el docroot y las migraciones*.
+
+### Corregido
+
+- Scaffold: el `TodoCrudTest` generado construía el kernel sin `loadRoutes()`,
+  así que todas las peticiones respondían 404. Ahora carga `src/routes`.
+- Scaffold: el `KernelTest` generado apuntaba a la carpeta de vistas con una
+  profundidad incorrecta y no encontraba `errors.500`. Ahora usa
+  `dirname(__DIR__, 4) . '/src/views'`.
+- Scaffold: en modo `--api` ya no se genera el `KernelTest` web, que referenciaba
+  `{Ns}\Http\Kernel`, una clase inexistente en ese modo.
+- Scaffold: el `TodoCrudTest` generado envía el body JSON con
+  `Content-Type: application/json`; sin esa cabecera la validación fallaba con 422.
+- Scaffold: el `ApiTodoCrudTest` generado separa el query string del path antes de
+  `Request::create()`, que no parsea la URL; las pruebas de paginación y búsqueda
+  respondían 404.
+- Tests: nueva regresión que ejecuta de verdad los tests del proyecto generado,
+  en modo web y API, para que estos fallos no vuelvan.
+
 ## [1.3.0] — 2026-10-30
 
 ### Cambiado

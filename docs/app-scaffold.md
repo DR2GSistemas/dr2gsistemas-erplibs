@@ -120,9 +120,30 @@ class TodoController
 | `migrations/..._create_todos_table.php` | tabla `todos` (SQLite/MySQL) |
 | `src/Controllers/TodoController.php` | index, show, create, store, edit, update, toggle, destroy |
 | `views/todo/{index,form,show}.php` | listado, formulario y detalle |
-| `routes/todo.php` | 8 rutas POST/GET |
-| `tests/Feature/TodoCrudTest.php` | CRUD completo sobre SQLite en memoria |
+| `src/routes/todo.php` | 8 rutas POST/GET |
+| `src/tests/Feature/TodoCrudTest.php` | CRUD completo sobre SQLite en memoria |
 | `src/Support/Database.php` | resolución de la conexión |
+
+## Estructura del proyecto generado
+
+Regla: **todo lo de la aplicación vive en `src/`**; sólo `public/` (docroot) y
+`migrations/` (contrato de `make:migration` / `migrate`) quedan fuera.
+
+```
+public/           docroot: index.php + .htaccess
+src/Controllers   controladores
+src/Http          Kernel / ApiKernel + middleware
+src/Models        modelos del ORM
+src/Support       utilidades propias
+src/routes        web.php, api.php, todo.php
+src/views         layout.php, home/, errors/, partials/
+src/config        app.php, database.php
+src/tests         Unit/, Feature/
+migrations/       migraciones
+bin/app           CLI del proyecto
+bootstrap.php     ensamblado (.env, config, kernel)
+composer.json     PSR-4 {Ns}\ => src/
+```
 
 ## Base de datos del proyecto generado
 
@@ -140,13 +161,20 @@ Todo el código PHP vive en `src/` con el namespace `{Ns}\...` (sin el segmento
 ```
 
 Así `src/Http/Kernel.php` corresponde a `Proyect001\Http\Kernel`.
-Las rutas, vistas, migraciones, config y tests se quedan en la raíz del proyecto.
 
 ## Verificación sin navegador
 
 ```bash
 php scripts/smoke_app.php  ../proyect001   # home, 404, 405
 php scripts/smoke_crud.php ../proyect001   # CRUD completo sobre SQLite en memoria
+```
+
+Los tests que genera el scaffold también pasan tal cual (el kernel web carga
+`src/routes`, y los tests de API separan el query string del path):
+
+```bash
+cd ../proyect001 && composer install
+php vendor/bin/phpunit src/tests
 ```
 
 ## Documentación previa (nuevo proyecto base)

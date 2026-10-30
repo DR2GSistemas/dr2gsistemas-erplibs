@@ -43,11 +43,11 @@ final class AppCreateCrudTest extends TestCase
             'migrations/2026_01_01_000000_create_todos_table.php',
             'src/Controllers/TodoController.php',
             'src/Support/Database.php',
-            'views/todo/index.php',
-            'views/todo/form.php',
-            'views/todo/show.php',
-            'routes/todo.php',
-            'tests/Feature/TodoCrudTest.php',
+            'src/views/todo/index.php',
+            'src/views/todo/form.php',
+            'src/views/todo/show.php',
+            'src/routes/todo.php',
+            'src/tests/Feature/TodoCrudTest.php',
         ] as $expected) {
             self::assertContains($expected, $created, "falta {$expected}");
             self::assertFileExists($this->base . '/' . $expected);
@@ -59,8 +59,8 @@ final class AppCreateCrudTest extends TestCase
         (new AppGenerator($this->base))->generate(null, 'proyect001', ['crud' => 'todo']);
 
         $model = (string) file_get_contents($this->base . '/src/Models/Todo.php');
-        $routes = (string) file_get_contents($this->base . '/routes/todo.php');
-        $web = (string) file_get_contents($this->base . '/routes/web.php');
+        $routes = (string) file_get_contents($this->base . '/src/routes/todo.php');
+        $web = (string) file_get_contents($this->base . '/src/routes/web.php');
 
         self::assertStringContainsString('namespace Proyect001\\Models;', $model);
         self::assertStringContainsString('Proyect001\\Controllers\\TodoController', $routes);
@@ -71,7 +71,7 @@ final class AppCreateCrudTest extends TestCase
     {
         (new AppGenerator($this->base))->generate('Acme', 'Acme', ['crud' => 'todo']);
 
-        $routes = (string) file_get_contents($this->base . '/routes/todo.php');
+        $routes = (string) file_get_contents($this->base . '/src/routes/todo.php');
 
         foreach (['/todos', '/todos/new', '/todos/{id}', '/todos/{id}/edit', '/todos/{id}/toggle', '/todos/{id}/delete'] as $path) {
             self::assertStringContainsString($path, $routes, "falta la ruta {$path}");
@@ -83,8 +83,8 @@ final class AppCreateCrudTest extends TestCase
         $created = (new AppGenerator($this->base))->generate('Acme', 'Acme');
 
         self::assertNotContains('src/Models/Todo.php', $created);
-        self::assertNotContains('routes/todo.php', $created);
-        self::assertFileExists($this->base . '/routes/web.php');
+        self::assertNotContains('src/routes/todo.php', $created);
+        self::assertFileExists($this->base . '/src/routes/web.php');
     }
 
     public function testUnknownCrudIsRejected(): void
@@ -116,5 +116,51 @@ final class AppCreateCrudTest extends TestCase
 
             self::assertSame(0, $exitCode, "{$relative}: " . implode(' ', $output));
         }
+    }
+
+    /**
+     * Los tests que genera el scaffold deben pasar tal cual: cubren las rutas
+     * relativas de vistas, rutas y cabeceras JSON que los smoke tests no ven.
+     *
+     * @dataProvider moduloProvider
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('moduloProvider')]
+    public function testGeneratedTestsPass(bool $api): void
+    {
+        (new AppGenerator($this->base))->generate('Acme', 'Acme', ['crud' => 'todo', 'api' => $api]);
+
+        $phpunit = dirname(__DIR__, 3) . '/vendor/bin/phpunit';
+
+        // Autoloader mínimo del proyecto generado (sin composer install).
+        $bootstrap = $this->base . '/../generated_autoload.php';
+        file_put_contents($bootstrap, sprintf(
+            "<?php\nspl_autoload_register(static function (string \$c): void {\n    \$p = %s;\n    if (str_starts_with(\$c, \$p) && is_file(\$f = %s . '/' . str_replace('\\\\\\\\', '/', substr(\$c, strlen(\$p))) . '.php')) { require \$f; }\n});\nrequire %s;\n",
+            var_export('Acme\\', true),
+            var_export($this->base . '/src', true),
+            var_export(dirname(__DIR__, 3) . '/vendor/autoload.php', true)
+        ));
+
+        $command = implode(' ', [
+            escapeshellarg(PHP_BINARY),
+            escapeshellarg($phpunit),
+            '--no-configuration',
+            '--bootstrap ' . escapeshellarg($bootstrap),
+            escapeshellarg($this->base . '/src/tests'),
+        ]);
+
+        exec($command . ' 2>&1', $output, $exitCode);
+
+        self::assertSame(0, $exitCode, implode("\n", $output));
+    }
+
+    /**
+     * @return array<string, array{bool}>
+     */
+    public static function moduloProvider(): array
+    {
+        return [
+            'web' => [false],
+            'api' => [true],
+        ];
     }
 }

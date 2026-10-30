@@ -37,12 +37,12 @@ final class NewAppCommandTest extends TestCase
     {
         $created = (new AppGenerator($this->base))->generate('Acme', 'Acme ERP');
 
-        self::assertContains('routes/web.php', $created);
+        self::assertContains('src/routes/web.php', $created);
         self::assertContains('src/Controllers/HomeController.php', $created);
         self::assertContains('src/Http/Kernel.php', $created);
-        self::assertContains('views/layout.php', $created);
-        self::assertContains('views/home/index.php', $created);
-        self::assertContains('views/errors/404.php', $created);
+        self::assertContains('src/views/layout.php', $created);
+        self::assertContains('src/views/home/index.php', $created);
+        self::assertContains('src/views/errors/404.php', $created);
 
         foreach ($created as $relative) {
             self::assertFileExists($this->base . '/' . $relative);
@@ -60,7 +60,7 @@ final class NewAppCommandTest extends TestCase
 
         $controller = (string) file_get_contents($this->base . '/src/Controllers/HomeController.php');
         $composer = (string) file_get_contents($this->base . '/composer.json');
-        $routes = (string) file_get_contents($this->base . '/routes/web.php');
+        $routes = (string) file_get_contents($this->base . '/src/routes/web.php');
 
         self::assertStringContainsString('namespace Acme\\Erp\\Controllers;', $controller);
         self::assertStringContainsString('"Acme\\\\Erp\\\\": "src/"', $composer);
@@ -87,7 +87,7 @@ final class NewAppCommandTest extends TestCase
 
         self::assertNotEmpty($created);
         self::assertFileExists($this->base . '/existing.txt');
-        self::assertFileExists($this->base . '/routes/web.php');
+        self::assertFileExists($this->base . '/src/routes/web.php');
     }
 
     public function testDryRunCreatesNothing(): void
@@ -135,5 +135,53 @@ final class NewAppCommandTest extends TestCase
     {
         self::assertSame('acme-erp', AppScaffold::slug('Acme ERP'));
         self::assertSame('app', AppScaffold::slug('---'));
+    }
+
+    /**
+     * Jerarquía: código y recursos en src/; sólo public/ y migrations/ fuera.
+     */
+    public function testCodeLivesUnderSrc(): void
+    {
+        $created = (new AppGenerator($this->base))->generate('Acme', 'Acme', ['crud' => 'todo']);
+
+        foreach ($created as $relative) {
+            if (str_starts_with($relative, 'src/') || str_starts_with($relative, 'public/') || str_starts_with($relative, 'migrations/')) {
+                continue;
+            }
+
+            self::assertContains(
+                $relative,
+                ['composer.json', 'bootstrap.php', 'bin/app', '.env', '.env.template', '.env.local.template', '.gitignore', 'README.md'],
+                "{$relative} debería vivir en src/"
+            );
+        }
+
+        foreach (['src/Controllers/HomeController.php', 'src/routes/web.php', 'src/views/layout.php', 'src/config/app.php', 'src/tests/Unit/App/KernelTest.php'] as $expected) {
+            self::assertContains($expected, $created);
+        }
+
+        self::assertContains('migrations/2026_01_01_000000_create_todos_table.php', $created);
+    }
+
+    /**
+     * Los tests generados dependen de rutas relativas: si las vistas no cargan,
+     * el kernel responde 500 con su propia vista de error.
+     */
+    public function testGeneratedKernelTestPointsToTheViews(): void
+    {
+        (new AppGenerator($this->base))->generate('Acme', 'Acme');
+
+        $test = (string) file_get_contents($this->base . '/src/tests/Unit/App/KernelTest.php');
+
+        self::assertStringContainsString("dirname(__DIR__, 4) . '/src/views'", $test);
+    }
+
+    public function testApiModeSkipsTheWebKernelTest(): void
+    {
+        $created = (new AppGenerator($this->base))->generate('Acme', 'Acme', ['api' => true]);
+
+        self::assertNotContains('src/tests/Unit/App/KernelTest.php', $created);
+        self::assertContains('src/tests/Feature/ApiHealthTest.php', $created);
+        self::assertContains('src/routes/api.php', $created);
     }
 }

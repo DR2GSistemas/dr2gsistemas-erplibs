@@ -30,12 +30,12 @@ final class CrudScaffold
         }
 
         return $files + [
-            'routes/todo.php' => CrudScaffold::routes($namespace),
+            'src/routes/todo.php' => CrudScaffold::routes($namespace),
             'src/Controllers/TodoController.php' => self::controller($app),
-            'views/todo/index.php' => self::indexView($app),
-            'views/todo/form.php' => self::formView($app),
-            'views/todo/show.php' => self::showView($app),
-            'tests/Feature/TodoCrudTest.php' => self::test($app),
+            'src/views/todo/index.php' => self::indexView($app),
+            'src/views/todo/form.php' => self::formView($app),
+            'src/views/todo/show.php' => self::showView($app),
+            'src/tests/Feature/TodoCrudTest.php' => self::test($app),
         ];
     }
 
@@ -484,12 +484,16 @@ final class TodoCrudTest extends TestCase
         Model::setDbManager(\$manager);
         Model::flushMetadata();
 
-        \$this->kernel = new Kernel(new Renderer([dirname(__DIR__, 2) . '/views']), ['debug' => false]);
+        \$this->kernel = (new Kernel(new Renderer([dirname(__DIR__, 2) . '/views']), ['debug' => false]))
+            ->loadRoutes(dirname(__DIR__, 2) . '/routes');
     }
 
     private function request(string \$method, string \$path, string \$body = ''): \Dr2g\ErpLibs\Routing\Response
     {
-        return \$this->kernel->handle(Request::create(\$method, \$path, body: \$body));
+        // Body JSON: sin Content-Type la petición no lo parsea como entrada.
+        \$headers = \$body === '' ? [] : ['Content-Type' => 'application/json'];
+
+        return \$this->kernel->handle(Request::create(\$method, \$path, body: \$body, headers: \$headers));
     }
 
     public function testCreateListShowToggleEditDelete(): void

@@ -43,18 +43,18 @@ final class AppGenerator
         if ($api) {
             // Modo API: kernel JSON, sin vistas; el recurso de ejemplo es opcional.
             $files = AppScaffold::files($namespace, trim($name), $this->basePath, $withCrud, api: true);
-            $files['routes/api.php'] = ApiScaffold::routes($namespace, $withCrud);
+            $files['src/routes/api.php'] = ApiScaffold::routes($namespace, $withCrud);
             $files['src/Http/ApiKernel.php'] = ApiScaffold::kernel($namespace);
             $files['src/Controllers/Api/HealthController.php'] = ApiScaffold::healthController($namespace);
             $files['src/Http/Middleware/JsonResponse.php'] = ApiScaffold::jsonMiddleware($namespace);
             $files['docs/api.md'] = ApiScaffold::documentation($namespace);
-            $files['tests/Feature/ApiHealthTest.php'] = ApiScaffold::healthTest($namespace);
+            $files['src/tests/Feature/ApiHealthTest.php'] = ApiScaffold::healthTest($namespace);
 
             if ($withCrud) {
                 // El recurso de ejemplo necesita modelo, migración y soporte de BD.
                 $files += CrudScaffold::files($namespace, false);
                 $files['src/Controllers/Api/TodoController.php'] = ApiScaffold::resourceController($namespace);
-                $files['tests/Feature/ApiTodoCrudTest.php'] = ApiScaffold::resourceTest($namespace);
+                $files['src/tests/Feature/ApiTodoCrudTest.php'] = ApiScaffold::resourceTest($namespace);
             }
         } else {
             $files = AppScaffold::files($namespace, trim($name), $this->basePath, $withCrud);

@@ -103,8 +103,8 @@ final class EnvScaffoldTest extends TestCase
     {
         (new AppGenerator($this->base))->generate('Acme', 'Acme');
 
-        $app = (string) file_get_contents($this->base . '/config/app.php');
-        $db = (string) file_get_contents($this->base . '/config/database.php');
+        $app = (string) file_get_contents($this->base . '/src/config/app.php');
+        $db = (string) file_get_contents($this->base . '/src/config/database.php');
 
         self::assertStringContainsString("getenv('APP_NAME')", $app);
         self::assertStringContainsString("getenv('APP_PORT')", $app);

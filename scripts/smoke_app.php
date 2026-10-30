@@ -63,7 +63,7 @@ $namespace = rtrim((string) array_key_first($psr4), '\\');
 $kernelClass = $namespace . '\\Http\\Kernel';
 $controllerClass = $namespace . '\\Controllers\\HomeController';
 
-$kernel = new $kernelClass(new Renderer([$app . '/views']), ['debug' => false]);
+$kernel = new $kernelClass(new Renderer([$app . '/src/views']), ['debug' => false]);
 $kernel->router()->get('/', $controllerClass . '@index');
 
 $failures = 0;

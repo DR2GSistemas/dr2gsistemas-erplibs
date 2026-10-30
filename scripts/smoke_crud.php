@@ -74,7 +74,7 @@ $manager = new DatabaseManager(['default' => 'test', 'connections' => ['test' =>
 Model::setDbManager($manager);
 Model::flushMetadata();
 
-$kernel = new $kernelClass(new Renderer([$project . '/views']), ['debug' => false]);
+$kernel = new $kernelClass(new Renderer([$project . '/src/views']), ['debug' => false]);
 $router = $kernel->router();
 
 $router->get('/', static fn () => \Dr2g\ErpLibs\Routing\Response::redirect('/todos'));
