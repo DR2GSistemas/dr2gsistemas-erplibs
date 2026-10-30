@@ -43,6 +43,7 @@ final class ApiScaffold
 
 namespace {$app}\\Http;
 
+use Dr2g\\ErpLibs\\Cache\\CacheManager;
 use Dr2g\\ErpLibs\\Routing\\ApiProblem;
 use Dr2g\\ErpLibs\\Routing\\Exception\\NotFoundException;
 use Dr2g\\ErpLibs\\Routing\\Exception\\RoutingException;
@@ -84,7 +85,7 @@ class ApiKernel
                 ->withHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
         });
 
-        \$this->router->setErrorHandler(static function (\\Throwable \$error, Request \$request): Response {
+        \$this->router->setErrorHandler(function (\\Throwable \$error, Request \$request): Response {
             if (\$error instanceof NotFoundException) {
                 \$allowed = \$error->getAllowedMethods();
 
