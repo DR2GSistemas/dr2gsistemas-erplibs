@@ -115,6 +115,20 @@ final class NewAppCommandTest extends TestCase
         self::assertSame('src/', $composer['autoload']['psr-4']['Acme\\Erp\\']);
     }
 
+    /**
+     * Sin la librería en disco, un repositorio `path` con url vacía es inválido
+     * y Composer acaba instalando la versión publicada.
+     */
+    public function testComposerJsonOmitsThePathRepositoryWhenTheLibraryIsMissing(): void
+    {
+        (new AppGenerator($this->base))->generate('Acme', 'Acme');
+
+        $composer = json_decode((string) file_get_contents($this->base . '/composer.json'), true, 512, JSON_THROW_ON_ERROR);
+
+        self::assertArrayNotHasKey('repositories', $composer);
+        self::assertSame('*', $composer['require']['dr2gsistemas/erplibs']);
+    }
+
     public function testGeneratedPhpFilesAreSyntacticallyValid(): void
     {
         $created = (new AppGenerator($this->base))->generate('Acme');

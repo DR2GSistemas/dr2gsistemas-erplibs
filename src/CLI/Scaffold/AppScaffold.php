@@ -130,10 +130,24 @@ final class AppScaffold
     public static function composer(string $namespace, string $name): string
     {
         $package = self::slug(str_replace('\\', '-', $namespace)) . '/' . self::slug($name);
-        $libraryPath = self::$libraryPath;
+        $libraryPath = trim(self::$libraryPath);
 
         // JSON necesita barras escapadas: Proyect001 => "Proyect001\\".
         $phpNamespace = str_replace('\\', '\\\\', $namespace) . '\\\\';
+
+        // Sin la librería en disco no se declara el repositorio `path`: una url
+        // vacía es inválida y hace que Composer instale la versión publicada.
+        $repositories = $libraryPath === ''
+            ? ''
+            : <<<JSON
+    "repositories": [
+        {
+            "type": "path",
+            "url": "{$libraryPath}",
+            "options": { "symlink": true }
+        }
+    ],
+JSON;
 
         return <<<JSON
 {
@@ -144,13 +158,7 @@ final class AppScaffold
         "php": ">=8.4",
         "dr2gsistemas/erplibs": "*"
     },
-    "repositories": [
-        {
-            "type": "path",
-            "url": "{$libraryPath}",
-            "options": { "symlink": true }
-        }
-    ],
+{$repositories}
     "autoload": {
         "psr-4": {
             "{$phpNamespace}": "src/"

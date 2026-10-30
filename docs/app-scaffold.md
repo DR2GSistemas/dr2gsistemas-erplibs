@@ -112,6 +112,43 @@ class TodoController
 
 `new:app` es la variante anterior (recibe el directorio completo y no añade CRUD).
 
+## Comandos `make:*` para componentes
+
+Se ejecutan **dentro** del proyecto generado (buscan `composer.json` hacia arriba)
+y toman el namespace y la carpeta `src/` de su `autoload.psr-4`. Con `--path=`
+se puede apuntar a otro proyecto.
+
+| Comando | Crea | Opciones |
+| --- | --- | --- |
+| `make:controller <Nombre>` | `src/Controllers/<Nombre>Controller.php` | `--resource`, `--api`, `--action=`, `--view=`, `--force` |
+| `make:model <Nombre>` | `src/Models/<Nombre>.php` | `--table=`, `--force` |
+| `make:view <vista>` | `src/views/<vista>.php` | `--force` |
+| `make:route <uri>` | `src/routes/<nombre>.php` | `--controller=Nombre@accion`, `--method=`, `--file=`, `--force` |
+| `make:middleware <Nombre>` | `src/Http/Middleware/<Nombre>.php` | `--force` |
+| `make:request <Nombre>` | `src/Http/Requests/<Nombre>Request.php` | `--force` |
+| `make:test <Nombre>` | `src/tests/Unit/<Nombre>Test.php` | `--feature`, `--force` |
+| `make:migration <nombre>` | `migrations/<timestamp>_<nombre>.php` | — |
+
+Detalles de comportamiento:
+
+- **Nunca sobrescribe** un archivo existente: falla con `Ya existe…` salvo `--force`.
+- **Nombres derivados**: el modelo calcula la tabla (`User` → `users`,
+  `Category` → `categories`, `Address` → `addresses`); el controlador deriva la
+  vista del nombre pedido, así `make:controller products` renderiza
+  `products.index`.
+- **Vistas con jerarquía**: `make:view users.show` crea
+  `src/views/users/show.php` (Renderer resuelve el punto como barra).
+- **Rutas**: cada archivo de `src/routes/` lo carga el kernel automáticamente;
+  `make:route` no modifica `web.php`.
+
+```bash
+bin/app make:controller products          # ProductsController + vista products.index
+bin/app make:view products.index
+bin/app make:route /products --controller=ProductsController@index
+bin/app make:model Product
+bin/app make:controller Product --api     # src/Controllers/Api/ProductController.php
+```
+
 ## Qué genera `--crud=todo`
 
 | Archivo | Contenido |

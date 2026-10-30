@@ -8,6 +8,34 @@ Todas las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
 Pendiente de la próxima versión.
 
+## [1.5.0] — 2026-10-30
+
+### Añadido
+
+- **CLI `make:*`**: generadores de componentes para un proyecto ya creado. El
+  namespace y la carpeta se leen del `composer.json` del proyecto (subiendo
+  directorios desde el actual) o de `--path=`:
+  - `make:controller <Nombre>` — `src/Controllers`; con `--resource` genera las
+    cinco acciones RESTful y con `--api` un `ApiCrud` en `src/Controllers/Api`.
+  - `make:model <Nombre>` — `src/Models`, con la tabla derivada del nombre
+    (`User` → `users`, `Category` → `categories`) o `--table=`.
+  - `make:view <vista>` — `src/views`; `users.show` crea `users/show.php`, que es
+    como `Renderer` resuelve el nombre.
+  - `make:route <uri>` — archivo en `src/routes` con la ruta registrada.
+  - `make:middleware <Nombre>` — middleware invocable en `src/Http/Middleware`.
+  - `make:request <Nombre>` — validación declarativa en `src/Http/Requests`.
+  - `make:test <Nombre>` — PHPUnit en `src/tests`, con `--feature`.
+- Los comandos nunca sobrescriben un archivo existente sin `--force`.
+- Tests: `MakeCommandsTest` cubre cada comando, el rechazo sin `--force`, los
+  helpers de nombres y la sintaxis de todo lo generado.
+
+### Corregido
+
+- Scaffold: cuando la librería no estaba en disco, el `composer.json` generado
+  incluía un repositorio `path` con `url` vacía, que es inválido y hacía que
+  Composer instalara la versión publicada en Packagist en lugar del código local.
+  Ahora la entrada `repositories` se omite en ese caso.
+
 ## [1.4.0] — 2026-10-30
 
 ### Cambiado
