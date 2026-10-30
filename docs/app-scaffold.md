@@ -16,6 +16,46 @@ php -S localhost:8080 -t public public/index.php
 open http://localhost:8080/todos
 ```
 
+## Variables de entorno: `.env.template`
+
+`app:create` genera **tres** archivos de entorno:
+
+| Archivo | Se versiona | Contenido |
+| --- | --- | --- |
+| `.env.template` | sí | documentación de todas las variables y sus valores por defecto |
+| `.env` | **no** | copia lista para usar: `APP_KEY` y `INSTALL_ADMIN_PASSWORD` generados |
+| `.env.local.template` | sí | overrides locales (credenciales reales); copiar a `.env.local` |
+
+Precedencia: entorno del sistema > `.env.local` > `.env` (las variables ya definidas
+en el proceso nunca se sobrescriben).
+
+### Secciones del `.env.template`
+
+| Sección | Variables |
+| --- | --- |
+| Aplicación | `APP_NAME`, `APP_ENV`, `APP_DEBUG`, `APP_URL`, `APP_PORT`, `APP_TIMEZONE`, `APP_LOCALE`, `APP_KEY` |
+| Motor de BD | `DB_CONNECTION` (`sqlite`/`mysql`/`mariadb`/`pgsql`), `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`, `DB_CHARSET`, `DB_DSN` |
+| Datos iniciales | `INSTALL_ADMIN_NAME`, `INSTALL_ADMIN_EMAIL`, `INSTALL_ADMIN_PASSWORD`, `MAIL_FROM`, `MAIL_TRANSPORT`, `LOG_LEVEL` |
+| CRUD de prueba | `SEED_TODOS`, `SEED_TODO_TITLE` (sólo con `--crud=todo`) |
+| Identidad | `PROJECT_NAMESPACE`, `PROJECT_SLUG` |
+
+### Cómo se usan
+
+```php
+// bootstrap.php
+DotEnv::load(__DIR__ . '/.env');
+DotEnv::load(__DIR__ . '/.env.local');   // gana este último
+$config = require 'config/app.php';      // APP_NAME, APP_PORT, APP_DEBUG...
+$database = require 'config/database.php'; // DB_CONNECTION, DB_HOST...
+```
+
+- `bin/app app:serve` usa **`APP_PORT`** si no se pasa `--port`.
+- Con `DB_CONNECTION=sqlite` la base es `DB_DATABASE` (ruta relativa al proyecto)
+  y la tabla se crea al arrancar el servidor embebido.
+- Con `DB_CONNECTION=mysql|mariadb|pgsql` se arma el DSN con los `DB_*`
+  (o se usa `DB_DSN` si está definido) y se aplica con `php bin/app migrate`.
+- `SEED_TODOS=true` inserta `SEED_TODO_TITLE` la primera vez que se visita `/`.
+
 ## Servir la app: `app:serve`
 
 ```bash

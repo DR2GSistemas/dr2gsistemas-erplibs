@@ -35,15 +35,13 @@ final class AppGenerator
         // La librería se referencia por ruta cuando existe en este checkout.
         AppScaffold::useLibraryPath($this->basePath);
 
-        $files = AppScaffold::files($namespace, trim($name), $this->basePath);
-
         $crud = $options['crud'] ?? null;
+        $withCrud = $crud !== null && $crud !== '';
 
-        if ($crud !== null && $crud !== '') {
-            $files['routes/web.php'] = AppScaffold::routes($namespace, true);
-        }
+        // El flag viaja a todas las plantillas (rutas, .env con SEED_*, etc.).
+        $files = AppScaffold::files($namespace, trim($name), $this->basePath, $withCrud);
 
-        if ($crud !== null && $crud !== '') {
+        if ($withCrud) {
             $files += match ($crud) {
                 'todo' => CrudScaffold::files($namespace),
                 default => throw new \InvalidArgumentException("CRUD no soportado: '{$crud}'. Disponibles: todo."),

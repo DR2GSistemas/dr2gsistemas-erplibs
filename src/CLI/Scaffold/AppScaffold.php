@@ -95,6 +95,9 @@ final class AppScaffold
             'bin/app' => self::bin(),
             'config/app.php' => self::configApp($viewPath),
             'config/database.php' => self::configDatabase(),
+            '.env.template' => self::envTemplate($namespace, $name, $withCrud),
+            '.env' => self::envFile($namespace, $name, $withCrud),
+            '.env.local.template' => self::envLocalTemplate($namespace, $name),
             'routes/web.php' => self::routes($namespace, $withCrud),
             'app/Controllers/HomeController.php' => self::controller($app),
             'app/Http/Kernel.php' => self::kernel($app),
@@ -107,6 +110,7 @@ final class AppScaffold
             'public/index.php' => self::publicIndex($namespace),
             'public/.htaccess' => self::htaccess(),
             'tests/Unit/App/KernelTest.php' => self::test($app),
+            '.gitignore' => self::gitignore(),
             'README.md' => self::readme($namespace, $name),
         ];
     }
@@ -156,18 +160,25 @@ JSON;
 <?php
 
 /*
- * Bootstrap de la aplicación: carga Composer, la configuración y prepara el kernel.
+ * Bootstrap de la aplicación: carga el entorno (.env), Composer y prepara el kernel.
  */
 
+use Dr2g\ErpLibs\Config\DotEnv;
 use Dr2g\ErpLibs\Core\DatabaseManager;
 use Dr2g\ErpLibs\Models\Model;
-use {$namespace}\App\Http\Kernel;
 use Dr2g\ErpLibs\View\Renderer;
+use {$namespace}\App\Http\Kernel;
 
 require_once __DIR__ . '/vendor/autoload.php';
 
+// Entorno: .env primero, .env.local después (gana este último).
+DotEnv::load(__DIR__ . '/.env');
+DotEnv::load(__DIR__ . '/.env.local');
+
 \$config = require __DIR__ . '/config/app.php';
 \$database = require __DIR__ . '/config/database.php';
+
+date_default_timezone_set((string) (\$config['timezone'] ?? 'UTC'));
 
 Model::setDbManager(new DatabaseManager(\$database));
 
@@ -193,6 +204,10 @@ $root = dirname(__DIR__);
 
 require $root . '/vendor/autoload.php';
 
+// Entorno del proyecto (.env + .env.local)
+Dr2g\ErpLibs\Config\DotEnv::load($root . '/.env');
+Dr2g\ErpLibs\Config\DotEnv::load($root . '/.env.local');
+
 $libraryBin = $root . '/vendor/bin/erplibs';
 
 if (!is_file($libraryBin)) {
@@ -202,8 +217,14 @@ if (!is_file($libraryBin)) {
 
 $_SERVER['argv'][0] = $libraryBin;
 
-// `bin/app app:serve` sirve este proyecto por defecto.
+// `bin/app app:serve` sirve este proyecto por defecto y usa APP_PORT del .env.
 if (($_SERVER['argv'][1] ?? '') === 'app:serve') {
+    $hasPort = array_filter(array_slice($_SERVER['argv'], 2), static fn (string $arg): bool => str_starts_with($arg, '--port')) !== [];
+
+    if (!$hasPort && ($port = getenv('APP_PORT')) !== false && $port !== '') {
+        $_SERVER['argv'][] = '--port=' . $port;
+    }
+
     $_SERVER['argv'][] = $root;
 }
 
@@ -212,22 +233,162 @@ require $libraryBin;
 PHP;
     }
 
+    /**
+     * `.env.template`: variables de la aplicación, motor de BD y datos iniciales.
+     */
+    public static function envTemplate(string $namespace, string $name, bool $withCrud = false): string
+    {
+        $slug = self::slug($namespace . '-' . $name);
+        $sqlitePath = 'storage/' . self::slug($name) . '.sqlite';
+        $todo = $withCrud
+            ? "# --- Datos iniciales del CRUD de prueba (--crud=todo) ---\nSEED_TODOS=true\nSEED_TODO_TITLE=\"Primera tarea de prueba\"\n\n"
+            : '';
+
+        return <<<ENV
+# =============================================================================
+# {$name} — plantilla de variables de entorno
+#
+#   cp .env.template .env.local    (app:create ya genera un .env)
+#
+# Nunca subas .env/.env.local al repositorio: contienen credenciales.
+# =============================================================================
+
+# --- Aplicación ---------------------------------------------------------------
+APP_NAME="{$name}"
+APP_ENV=local                 # local | staging | production
+APP_DEBUG=true                # false en producción
+APP_URL=http://localhost:8000
+APP_PORT=8000                 # puerto por defecto de `bin/app app:serve`
+APP_TIMEZONE=UTC
+APP_LOCALE=es
+APP_KEY=                      # php -r "echo bin2hex(random_bytes(32)) . PHP_EOL;"
+
+# --- Motor de base de datos ---------------------------------------------------
+# sqlite | mysql | mariadb | pgsql
+DB_CONNECTION=sqlite
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE={$sqlitePath}       # con sqlite: ruta relativa al proyecto
+DB_USERNAME=root
+DB_PASSWORD=
+DB_CHARSET=utf8mb4
+# DB_DSN=                     # opcional: DSN completo, tiene prioridad
+
+# --- Otros datos iniciales ----------------------------------------------------
+INSTALL_ADMIN_NAME="Administrador"
+INSTALL_ADMIN_EMAIL=admin@localhost
+INSTALL_ADMIN_PASSWORD=       # vacío: se genera al instalar
+MAIL_FROM=no-reply@localhost
+MAIL_TRANSPORT=log            # log | smtp
+LOG_LEVEL=warning
+
+{$todo}# --- Identidad generada por app:create ----------------------------------------
+PROJECT_NAMESPACE={$namespace}
+PROJECT_SLUG={$slug}
+ENV;
+    }
+
+    /**
+     * `.env` listo para usar: parte de la plantilla y genera `APP_KEY` y la
+     * contraseña inicial del administrador.
+     */
+    public static function envFile(string $namespace, string $name, bool $withCrud = false): string
+    {
+        $secrets = [
+            'APP_KEY' => bin2hex(random_bytes(32)),
+            'INSTALL_ADMIN_PASSWORD' => bin2hex(random_bytes(8)),
+        ];
+
+        $lines = [];
+
+        foreach (explode("\n", self::envTemplate($namespace, $name, $withCrud)) as $line) {
+            $trimmed = ltrim($line);
+
+            // Comentarios y líneas vacías se copian tal cual.
+            if ($trimmed === '' || str_starts_with($trimmed, '#')) {
+                $lines[] = $line;
+                continue;
+            }
+
+            [$key, $value] = explode('=', $line, 2);
+
+            if (isset($secrets[$key])) {
+                $lines[] = $key . '=' . $secrets[$key];
+                continue;
+            }
+
+            // El comentario en línea pasa a la línea anterior para que getenv() sea limpio.
+            if (preg_match('/^(.*?)(\s{2,}#.*)$/', $value, $match) === 1) {
+                $value = $match[1];
+                $lines[] = trim($match[2]);
+            }
+
+            $lines[] = $key . '=' . trim($value);
+        }
+
+        return implode("\n", $lines) . "\n";
+    }
+
+    /**
+     * Variables locales (credenciales reales) que no se versionan.
+     */
+    public static function envLocalTemplate(string $namespace, string $name): string
+    {
+        $database = 'app_' . self::slug($name);
+
+        return <<<ENV
+# =============================================================================
+# {$name} — overrides locales (no se versiona)
+#
+#   cp .env.local.template .env.local
+#
+# Se carga DESPUÉS de .env; los valores de este archivo ganan.
+# =============================================================================
+
+APP_ENV=local
+APP_DEBUG=true
+
+# Credenciales reales del entorno
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE={$database}
+DB_USERNAME=root
+DB_PASSWORD=
+ENV;
+    }
+
     public static function configApp(string $viewPath): string
     {
         return <<<PHP
 <?php
 
 /*
- * Configuración de la aplicación generada.
+ * Configuración de la aplicación. Los valores vienen de .env (ver .env.template).
  */
 
 return [
-    // Rutas donde el Renderer busca las vistas.
     'views' => __DIR__ . '/../views',
-    'debug' => (bool) (getenv('APP_DEBUG') ?: false),
-    'name' => '{$viewPath}',
-    // Base de datos del servidor embebido (sqlite o null para no preparar nada).
-    'database' => getenv('APP_DATABASE') ?: 'sqlite:' . __DIR__ . '/../storage/app.sqlite',
+    'debug' => filter_var(getenv('APP_DEBUG') ?: 'false', FILTER_VALIDATE_BOOLEAN),
+    'name' => getenv('APP_NAME') ?: '{$viewPath}',
+    'env' => getenv('APP_ENV') ?: 'local',
+    'url' => getenv('APP_URL') ?: 'http://localhost:8000',
+    'port' => (int) (getenv('APP_PORT') ?: 8000),
+    'timezone' => getenv('APP_TIMEZONE') ?: 'UTC',
+    'locale' => getenv('APP_LOCALE') ?: 'es',
+    'key' => getenv('APP_KEY') ?: '',
+    'mail' => [
+        'from' => getenv('MAIL_FROM') ?: 'no-reply@localhost',
+        'transport' => getenv('MAIL_TRANSPORT') ?: 'log',
+    ],
+    'install' => [
+        'admin_name' => getenv('INSTALL_ADMIN_NAME') ?: 'Administrador',
+        'admin_email' => getenv('INSTALL_ADMIN_EMAIL') ?: 'admin@localhost',
+        'admin_password' => getenv('INSTALL_ADMIN_PASSWORD') ?: '',
+    ],
+    // Base de datos del servidor embebido (sqlite:... o null para no preparar nada).
+    'database' => getenv('APP_DATABASE') ?: (str_starts_with((string) (getenv('DB_CONNECTION') ?: 'sqlite'), 'sqlite')
+        ? 'sqlite:' . __DIR__ . '/../storage/app.sqlite'
+        : null),
 ];
 
 PHP;
@@ -239,43 +400,64 @@ PHP;
 <?php
 
 /*
- * Configuración de base de datos.
+ * Motor de base de datos. Lee .env (ver .env.template):
  *
- * Por defecto usa SQLite en storage/app.sqlite para que el proyecto funcione
- * sin instalar un servidor. Para MySQL: DB_CONNECTION=mysql + DR2G_DB_*.
+ *   DB_CONNECTION=sqlite|mysql|mariadb|pgsql
+ *   DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD, DB_CHARSET
+ *   DB_DSN (opcional: DSN completo, tiene prioridad sobre los campos sueltos)
  */
 
-$env = static fn (string $key, string $default): string => (string) (getenv($key) ?: $default);
+$env = static fn (string $key, string $default = ''): string => (string) (getenv($key) === false ? $default : getenv($key));
 
-// storage/ debe existir antes de que PDO abra el fichero.
 $storage = __DIR__ . '/../storage';
 
 if (!is_dir($storage)) {
     @mkdir($storage, 0755, true);
 }
 
-if ($env('DB_CONNECTION', 'sqlite') === 'mysql') {
+$connection = strtolower($env('DB_CONNECTION', 'sqlite')) ?: 'sqlite';
+$dsn = $env('DB_DSN');
+
+if ($connection === 'sqlite') {
+    $database = $env('DB_DATABASE', 'storage/app.sqlite');
+    $absolute = str_starts_with($database, '/') || preg_match('#^[A-Za-z]:[\\/]#', $database) === 1;
+    $file = $absolute ? $database : dirname(__DIR__) . '/' . ltrim($database, '/');
+
     return [
-        'default' => 'mysql',
+        'default' => 'sqlite',
         'connections' => [
-            'mysql' => [
-                'driver' => 'mysql',
-                'host' => $env('DR2G_DB_HOST', '127.0.0.1'),
-                'port' => (int) $env('DR2G_DB_PORT', '3306'),
-                'database' => $env('DR2G_DB_NAME', 'app'),
-                'username' => $env('DR2G_DB_USER', 'root'),
-                'password' => $env('DR2G_DB_PASSWORD', ''),
-                'charset' => $env('DR2G_DB_CHARSET', 'utf8mb4'),
+            'sqlite' => [
+                'dsn' => $dsn !== '' ? $dsn : 'sqlite:' . $file,
             ],
         ],
     ];
 }
 
+$driver = $connection === 'mariadb' ? 'mysql' : $connection;
+$host = $env('DB_HOST', '127.0.0.1');
+$port = (int) $env('DB_PORT', $driver === 'pgsql' ? '5432' : '3306');
+$database = $env('DB_DATABASE', 'app');
+$charset = $env('DB_CHARSET', $driver === 'pgsql' ? 'utf8' : 'utf8mb4');
+
 return [
-    'default' => 'sqlite',
+    'default' => $connection,
     'connections' => [
-        'sqlite' => [
-            'dsn' => $env('DR2G_DB_DSN', 'sqlite:' . $storage . '/app.sqlite'),
+        $connection => [
+            'driver' => $driver,
+            'host' => $host,
+            'port' => $port,
+            'database' => $database,
+            'username' => $env('DB_USERNAME', 'root'),
+            'password' => $env('DB_PASSWORD'),
+            'charset' => $charset,
+            'dsn' => $dsn !== '' ? $dsn : sprintf(
+                '%s:host=%s;port=%d;dbname=%s;charset=%s',
+                $driver,
+                $host,
+                $port,
+                $database,
+                $charset
+            ),
         ],
     ],
 ];
@@ -298,7 +480,17 @@ PHP;
  */
 
 if ({$crudJs}) {
-    \$kernel->router()->get('/', static fn () => \Dr2g\ErpLibs\Routing\Response::redirect('/todos'));
+    \$kernel->router()->get('/', static function () {
+        // Datos iniciales declarados en .env (SEED_TODOS / SEED_TODO_TITLE).
+        if (filter_var(getenv('SEED_TODOS') ?: 'false', FILTER_VALIDATE_BOOLEAN)
+            && \\{$namespace}\\App\\Models\\Todo::query()->count() === 0) {
+            \\{$namespace}\\App\\Models\\Todo::create([
+                'title' => getenv('SEED_TODO_TITLE') ?: 'Primera tarea de prueba',
+            ]);
+        }
+
+        return \Dr2g\ErpLibs\Routing\Response::redirect('/todos');
+    });
 } else {
     \$kernel->router()->get('/', '{$namespace}\\App\\Controllers\\HomeController@index');
 }
@@ -630,6 +822,23 @@ final class KernelTest extends TestCase
 }
 
 PHP;
+    }
+
+    public static function gitignore(): string
+    {
+        return <<<'TXT'
+# Entorno: sólo se versionan las plantillas
+.env
+.env.local
+.env.*.local
+
+/vendor/
+/storage/*.sqlite
+/storage/*.log
+composer.lock
+.phpunit.cache/
+.phpunit.result.cache
+TXT;
     }
 
     public static function readme(string $namespace, string $name): string
