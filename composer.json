@@ -1,0 +1,47 @@
+{
+    "name": "dr2gsistemas/erplibs",
+    "description": "Librería PHP 8.4+ para ERP: ORM por atributos, migraciones, eventos, validación, serialización, caché, logging y auditoría",
+    "type": "library",
+    "license": "proprietary",
+    "keywords": ["orm", "erp", "migrations", "query-builder", "php84"],
+    "require": {
+        "php": ">=8.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^13.4",
+        "phpstan/phpstan": "^2.3",
+        "php-cs-fixer/shim": "^3.95"
+    },
+    "autoload": {
+        "psr-4": {
+            "Dr2g\\ErpLibs\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Dr2g\\ErpLibs\\Tests\\": "tests/"
+        }
+    },
+    "bin": [
+        "bin/erplibs"
+    ],
+    "config": {
+        "sort-packages": true
+    },
+    "scripts": {
+        "test": "phpunit --testsuite unit",
+        "test:all": "phpunit",
+        "analyse": "phpstan analyse --no-progress",
+        "lint": "php-cs-fixer fix --dry-run --diff",
+        "check": [
+            "@test",
+            "@analyse",
+            "@lint"
+        ]
+    },
+    "authors": [
+        {
+            "name": "dr2gsistemas"
+        }
+    ]
+}

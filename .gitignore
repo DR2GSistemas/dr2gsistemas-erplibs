@@ -1,0 +1,8 @@
+/vendor/
+/migrations/*.php
+!.gitkeep
+.phpunit.cache/
+.phpunit.result.cache
+.phpstan-cache/
+.php-cs-fixer.cache
+composer.lock

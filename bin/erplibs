@@ -1,0 +1,15 @@
+<?php
+
+require __DIR__ . '/../bootstrap.php';
+
+use Dr2g\ErpLibs\CLI\Console;
+use Dr2g\ErpLibs\CLI\Commands\MakeMigrationCommand;
+use Dr2g\ErpLibs\CLI\Commands\MigrateCommand;
+use Dr2g\ErpLibs\CLI\Commands\RollbackCommand;
+
+$console = new Console();
+$console->addCommand(new MakeMigrationCommand());
+$console->addCommand(new MigrateCommand());
+$console->addCommand(new RollbackCommand());
+
+$console->run($_SERVER['argv']);

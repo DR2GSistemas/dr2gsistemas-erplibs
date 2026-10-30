@@ -1,0 +1,9 @@
+parameters:
+    level: 8
+    paths:
+        - src
+    tmpDir: .phpstan-cache
+    ignoreErrors:
+        -
+            identifier: new.static
+            message: '#Unsafe usage of new static\(\)#'
