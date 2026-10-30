@@ -1,9 +1,18 @@
 {
     "name": "dr2gsistemas/erplibs",
-    "description": "Librería PHP 8.4+ para ERP: ORM por atributos, migraciones, eventos, validación, serialización, caché, logging y auditoría",
+    "description": "Librería PHP 8.4+ para ERP: ORM por atributos, migraciones, eventos, validación, serialización, caché, logging, auditoría y servidor API",
     "type": "library",
-    "license": "proprietary",
-    "keywords": ["orm", "erp", "migrations", "query-builder", "php84"],
+    "license": "MIT",
+    "keywords": [
+        "orm",
+        "erp",
+        "migrations",
+        "query-builder",
+        "api",
+        "rest",
+        "routing",
+        "php84"
+    ],
     "require": {
         "php": ">=8.4"
     },
@@ -25,6 +34,10 @@
     "bin": [
         "bin/erplibs"
     ],
+    "support": {
+        "issues": "https://github.com/dr2gsistemas/erplibs/issues",
+        "source": "https://github.com/dr2gsistemas/erplibs"
+    },
     "config": {
         "sort-packages": true
     },
@@ -33,10 +46,15 @@
         "test:all": "phpunit",
         "analyse": "phpstan analyse --no-progress",
         "lint": "php-cs-fixer fix --dry-run --diff",
+        "audit:release": "php scripts/release-audit.php",
         "check": [
             "@test",
             "@analyse",
             "@lint"
+        ],
+        "release:check": [
+            "@check",
+            "@audit:release"
         ]
     },
     "authors": [

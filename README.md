@@ -1,10 +1,14 @@
 # dr2gsistemas/erplibs
 
+[![PHP](https://img.shields.io/badge/php-%E2%89%A58.4-777bb4)](https://www.php.net/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-156%20passing-brightgreen)](#desarrollo-de-la-libreria)
+
 Librería PHP 8.4+ para ERP: ORM por atributos, query builder validado,
 migraciones con batches, eventos, validación, serialización, caché, logging,
-auditoría y utilidades de resiliencia.
+auditoría, router HTTP y servidor API con CRUD especializado.
 
-- **PHP** ≥ 8.4 · **Dependencias de runtime**: ninguna · **BD**: MySQL / MariaDB
+- **PHP** ≥ 8.4 · **Dependencias de runtime**: ninguna · **BD**: SQLite, MySQL, MariaDB, PostgreSQL
 - **Namespace**: `Dr2g\ErpLibs\`
 - **Paquete**: `dr2gsistemas/erplibs`
 
@@ -112,18 +116,20 @@ composer test        # PHPUnit (suite unit)
 composer analyse     # PHPStan nivel 8, sin baseline
 composer lint        # PSR-12
 composer check       # los tres
+composer audit:release  # qué archivos entran en el paquete
 ```
 
 Tests de integración (MySQL):
 
 ```bash
-DR2G_TEST_DSN="mysql:host=127.0.0.1;port=3306;dbname=azulerp" \
+DR2G_TEST_DSN="mysql:host=127.0.0.1;port=3306;dbname=dr2g_ci" \
 DR2G_TEST_PASSWORD=root composer test:all
 ```
 
 ## Estructura
 
 ```
+src/Api         ApiCrud (CRUD REST) y utilidades
 src/Core        Connection, QueryBuilder, DatabaseManager, modelo de resiliencia
 src/Models      Model + atributos
 src/Migrations  DDL, batches, detección desde atributos
@@ -150,9 +156,12 @@ src/Testing     Dobles y helpers para consumidores
 - [`docs/acceptance.md`](docs/acceptance.md) — criterios de aceptación.
 - [`CHANGELOG.md`](CHANGELOG.md) — versiones.
 
-## ¿Migrando desde `dan/azulerp-orm`?
+## Requisitos y soporte
 
-El namespace público cambió de `Azulerp\` a `Dr2g\ErpLibs\`. El puente de
-compatibilidad en `compat/azulerp_aliases.php` permite que el código antiguo
-siga funcionando; el proyecto consumidor lo carga desde su `bootstrap.php`.
-Se eliminará en 2.0.
+- PHP ≥ 8.4 (probado en 8.4 y 8.5).
+- Extensiones: `pdo` y el driver de la base de datos usada (`pdo_sqlite`, `pdo_mysql`, `pdo_pgsql`).
+- `ext-redis` es opcional (solo para `RedisCache`).
+
+## Licencia y soporte
+
+Ver [`LICENSE`](LICENSE) y [`SECURITY.md`](SECURITY.md) para reportar vulnerabilidades.

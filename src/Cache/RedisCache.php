@@ -14,7 +14,7 @@ class RedisCache implements CacheInterface
      */
     public function __construct(
         private readonly object $redis,
-        private readonly string $prefix = 'azulerp:'
+        private readonly string $prefix = 'dr2g:'
     ) {
     }
 

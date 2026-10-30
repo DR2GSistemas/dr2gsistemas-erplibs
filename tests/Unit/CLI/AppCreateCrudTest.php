@@ -62,8 +62,8 @@ final class AppCreateCrudTest extends TestCase
         $routes = (string) file_get_contents($this->base . '/routes/todo.php');
         $web = (string) file_get_contents($this->base . '/routes/web.php');
 
-        self::assertStringContainsString('namespace Proyect001\\App\\Models;', $model);
-        self::assertStringContainsString('Proyect001\\App\\Controllers\\TodoController', $routes);
+        self::assertStringContainsString('namespace Proyect001\\Models;', $model);
+        self::assertStringContainsString('Proyect001\\Controllers\\TodoController', $routes);
         self::assertStringContainsString("require __DIR__ . '/todo.php';", $web);
     }
 

@@ -42,7 +42,7 @@ jobs:
         image: mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: azulerp
+          MYSQL_DATABASE: dr2g_ci
         ports: ['3306:3306']
         options: >-
           --health-cmd="mysqladmin ping -h127.0.0.1 -proot"
@@ -64,6 +64,6 @@ jobs:
       - name: PHPUnit (unit + integration)
         run: composer test:all
         env:
-          DR2G_TEST_DSN: 'mysql:host=127.0.0.1;port=3306;dbname=azulerp'
+          DR2G_TEST_DSN: 'mysql:host=127.0.0.1;port=3306;dbname=dr2g_ci'
           DR2G_TEST_USER: root
           DR2G_TEST_PASSWORD: root

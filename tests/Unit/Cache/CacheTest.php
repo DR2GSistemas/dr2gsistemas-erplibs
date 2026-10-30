@@ -73,7 +73,7 @@ final class FileCacheTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->directory = sys_get_temp_dir() . '/azulerp_cache_' . bin2hex(random_bytes(4));
+        $this->directory = sys_get_temp_dir() . '/dr2g_cache_' . bin2hex(random_bytes(4));
     }
 
     protected function tearDown(): void

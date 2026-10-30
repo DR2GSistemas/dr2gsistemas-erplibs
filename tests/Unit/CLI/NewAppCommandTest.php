@@ -62,9 +62,9 @@ final class NewAppCommandTest extends TestCase
         $composer = (string) file_get_contents($this->base . '/composer.json');
         $routes = (string) file_get_contents($this->base . '/routes/web.php');
 
-        self::assertStringContainsString('namespace Acme\\Erp\\App\\Controllers;', $controller);
-        self::assertStringContainsString('"Acme\\\\Erp\\\\App\\\\": "app/"', $composer);
-        self::assertStringContainsString('Acme\\Erp\\App\\Controllers\\HomeController@index', $routes);
+        self::assertStringContainsString('namespace Acme\\Erp\\Controllers;', $controller);
+        self::assertStringContainsString('"Acme\\\\Erp\\\\": "app/"', $composer);
+        self::assertStringContainsString('Acme\\Erp\\Controllers\\HomeController@index', $routes);
     }
 
     public function testRefusesNonEmptyDirectoryWithoutForce(): void
@@ -112,7 +112,7 @@ final class NewAppCommandTest extends TestCase
         $composer = json_decode((string) file_get_contents($this->base . '/composer.json'), true, 512, JSON_THROW_ON_ERROR);
 
         self::assertSame('acme-erp/acme-erp', $composer['name']);
-        self::assertSame('app/', $composer['autoload']['psr-4']['Acme\\Erp\\App\\']);
+        self::assertSame('app/', $composer['autoload']['psr-4']['Acme\\Erp\\']);
     }
 
     public function testGeneratedPhpFilesAreSyntacticallyValid(): void

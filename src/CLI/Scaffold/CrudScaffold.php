@@ -16,7 +16,7 @@ final class CrudScaffold
      */
     public static function files(string $namespace, bool $withWeb = true): array
     {
-        $app = $namespace . '\\App';
+        $app = $namespace;
 
         $files = [
             'app/Models/Todo.php' => self::model($app),
@@ -47,10 +47,10 @@ final class CrudScaffold
 /*
  * Rutas del CRUD de ejemplo (todolist). Las carga routes/web.php.
  *
- * @var {$namespace}\\App\\Http\\Kernel \$kernel
+ * @var {$namespace}\\Http\\Kernel \$kernel
  */
 
-\$todo = '{$namespace}\\App\\Controllers\\TodoController';
+\$todo = '{$namespace}\\Controllers\\TodoController';
 
 \$kernel->router()->get('/todos', "{\$todo}@index");
 \$kernel->router()->get('/todos/new', "{\$todo}@create");

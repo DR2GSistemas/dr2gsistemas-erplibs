@@ -1,9 +1,93 @@
+# =============================================================================
+# Dependencias
+# =============================================================================
 /vendor/
+/vendor-bin/
+composer.lock
+
+# =============================================================================
+# Entorno y secretos (nunca deben publicarse)
+# =============================================================================
+.env
+.env.*
+!.env.template
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+secrets/
+
+# =============================================================================
+# Artefactos de ejecución
+# =============================================================================
 /migrations/*.php
-!.gitkeep
+/migrations/*.sql
+/storage/
+/var/
+/build/
+/dist/
+/compact/
+/storage/*.sqlite
+*.sqlite
+*.sqlite3
+*.db
+*.log
+*.pid
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+
+# =============================================================================
+# Cachés de herramientas
+# =============================================================================
 .phpunit.cache/
 .phpunit.result.cache
 .phpstan-cache/
 .php-cs-fixer.cache
-composer.lock
-/compact/
+.php-cs-fixer.php.cache
+.psalm/
+coverage/
+*.cobertura.xml
+junit.xml
+reports/
+.phpdoc/
+
+# =============================================================================
+# Sistema operativo y editores
+# =============================================================================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*~
+*.swp
+*.swo
+*.bak
+*.orig
+*.rej
+
+# =============================================================================
+# IDE
+# =============================================================================
+/.idea/
+/.vscode/
+/.fleet/
+*.iml
+*.sublime-*
+.netbeans/
+nbproject/
+
+# =============================================================================
+# Temporales
+# =============================================================================
+*.tmp
+*.temp
+*.cache
+/tmp/
+*.zip
+*.tar
+*.tar.gz

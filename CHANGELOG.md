@@ -59,4 +59,4 @@ Primera versión estable del ORM.
 - `ValidationException` fallaba con `implode()` sobre errores multidimensionales.
 - `Model::hydrate()` no inicializaba las propiedades tipadas declaradas.
 
-[1.0.0]: https://github.com/azulerp/orm/releases/tag/v1.0.0
+[1.0.0]: https://github.com/dr2gsistemas/erplibs/releases/tag/v1.0.0

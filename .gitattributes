@@ -1,0 +1,41 @@
+# Normalización de finales de línea
+* text=auto eol=lf
+
+# Archivos binarios
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.zip  binary
+*.phar binary
+
+# ---------------------------------------------------------------------------
+# Lo que NO viaja en el paquete de Composer ni en el archivo de exportación
+# ---------------------------------------------------------------------------
+/tests/            export-ignore
+/docs/             export-ignore
+/examples/         export-ignore
+/benchmarks/       export-ignore
+/scripts/          export-ignore
+/.github/          export-ignore
+/.gitignore        export-ignore
+/.gitattributes    export-ignore
+/.php-cs-fixer.php export-ignore
+/.php-cs-fixer.cache export-ignore
+/phpstan.neon      export-ignore
+/phpunit.xml       export-ignore
+/CHANGELOG.md      export-ignore
+/CONTRIBUTING.md   export-ignore
+/SECURITY.md       export-ignore
+/phpunit.cache/    export-ignore
+/.phpstan-cache/   export-ignore
+/.env              export-ignore
+/.env.local        export-ignore
+/.phpunit.cache/  export-ignore
+/.phpunit.result.cache export-ignore
+/composer.lock     export-ignore
+/.env.template     export-ignore
+/.env.local.template export-ignore
+/migrations/       export-ignore
+/storage/          export-ignore

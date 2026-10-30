@@ -86,8 +86,8 @@ final class AppScaffold
      */
     public static function files(string $namespace, string $name, string $viewPath, bool $withCrud = false, bool $api = false): array
     {
-        // {Ns}\App\Http\Kernel -> app/Http/Kernel.php (PSR-4 {Ns}\App\ => app/)
-        $app = $namespace . '\\App';
+        // {Ns}\Http\Kernel -> app/Http/Kernel.php (PSR-4 {Ns}\ => app/)
+        $app = $namespace;
 
         $files = [
             'composer.json' => self::composer($namespace, $name),
@@ -128,8 +128,8 @@ final class AppScaffold
         $package = self::slug(str_replace('\\', '-', $namespace)) . '/' . self::slug($name);
         $libraryPath = self::$libraryPath;
 
-        // JSON necesita barras escapadas: Proyect001\App\ => "Proyect001\\App\\".
-        $phpNamespace = str_replace('\\', '\\\\', $namespace) . '\\\\App\\\\';
+        // JSON necesita barras escapadas: Proyect001 => "Proyect001\\".
+        $phpNamespace = str_replace('\\', '\\\\', $namespace) . '\\\\';
 
         return <<<JSON
 {
@@ -178,7 +178,7 @@ JSON;
 use Dr2g\ErpLibs\Config\DotEnv;
 use Dr2g\ErpLibs\Core\DatabaseManager;
 use Dr2g\ErpLibs\Models\Model;
-{$rendererUse}use {$namespace}\\App\\Http\\{$kernelClass};
+{$rendererUse}use {$namespace}\\Http\\{$kernelClass};
 
 require_once __DIR__ . '/vendor/autoload.php';
 
@@ -497,15 +497,15 @@ PHP;
 /*
  * Rutas web de la aplicación. Se registran sobre el Kernel.
  *
- * @var {$namespace}\\App\\Http\\Kernel \$kernel
+ * @var {$namespace}\\Http\\Kernel \$kernel
  */
 
 if ({$crudJs}) {
     \$kernel->router()->get('/', static function () {
         // Datos iniciales declarados en .env (SEED_TODOS / SEED_TODO_TITLE).
         if (filter_var(getenv('SEED_TODOS') ?: 'false', FILTER_VALIDATE_BOOLEAN)
-            && \\{$namespace}\\App\\Models\\Todo::query()->count() === 0) {
-            \\{$namespace}\\App\\Models\\Todo::create([
+            && \\{$namespace}\\Models\\Todo::query()->count() === 0) {
+            \\{$namespace}\\Models\\Todo::create([
                 'title' => getenv('SEED_TODO_TITLE') ?: 'Primera tarea de prueba',
             ]);
         }
@@ -513,7 +513,7 @@ if ({$crudJs}) {
         return \Dr2g\ErpLibs\Routing\Response::redirect('/todos');
     });
 } else {
-    \$kernel->router()->get('/', '{$namespace}\\App\\Controllers\\HomeController@index');
+    \$kernel->router()->get('/', '{$namespace}\\Controllers\\HomeController@index');
 }
 {$crud}
 
@@ -787,7 +787,7 @@ PHP;
  *   php bin/app app:serve --port 8000
  */
 
-use {$namespace}\\App\\Http\\{$kernelClass};
+use {$namespace}\\Http\\{$kernelClass};
 
 /** @var {$kernelClass} \$kernel */
 \$kernel = require dirname(__DIR__) . '/bootstrap.php';

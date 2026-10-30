@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Runs only when DR2G_TEST_DSN points to a disposable database, e.g.
- * DR2G_TEST_DSN="mysql:host=127.0.0.1;port=3306;dbname=azulerp_test".
+ * DR2G_TEST_DSN="mysql:host=127.0.0.1;port=3306;dbname=dr2g_test".
  */
 final class ConnectionTest extends TestCase
 {

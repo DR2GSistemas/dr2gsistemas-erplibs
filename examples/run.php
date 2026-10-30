@@ -29,7 +29,7 @@ class User extends Model
     public string $password_hash;
 }
 
-$file = sys_get_temp_dir() . '/azulerp_example_' . getmypid() . '.sqlite';
+$file = sys_get_temp_dir() . '/dr2g_example_' . getmypid() . '.sqlite';
 @unlink($file);
 
 $connection = new Connection(['dsn' => 'sqlite:' . $file]);

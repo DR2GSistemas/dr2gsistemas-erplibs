@@ -16,7 +16,7 @@ final class MigrationManagerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->path = sys_get_temp_dir() . '/azulerp_test_' . bin2hex(random_bytes(4));
+        $this->path = sys_get_temp_dir() . '/dr2g_test_' . bin2hex(random_bytes(4));
         mkdir($this->path, 0755, true);
         $this->connection = new FakeConnection();
     }

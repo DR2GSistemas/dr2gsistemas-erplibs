@@ -15,7 +15,7 @@ final class ApiScaffold
      */
     public static function files(string $namespace, bool $withResource = true): array
     {
-        $app = $namespace . '\\App';
+        $app = $namespace;
 
         $files = [
             'app/Http/ApiKernel.php' => self::kernel($app),
@@ -525,7 +525,7 @@ PHP;
 
     public static function routes(string $namespace, bool $withResource = true): string
     {
-        $app = $namespace . '\\App';
+        $app = $namespace;
         $resource = '';
 
         if ($withResource) {
