@@ -4,9 +4,13 @@ Todas las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-### Sin cambios
+## [1.8.3] — 2026-10-30
 
-Pendiente de la próxima versión.
+### Añadido
+
+- **CLI `feature:enable`**: integra Vue 3 con TypeScript, Composition API y Vite
+  en aplicaciones web existentes; permite elegir un tema Material Design CSS
+  generado o PrimeVue 4, mutuamente excluyentes.
 
 ## [1.8.2] — 2026-10-30
 

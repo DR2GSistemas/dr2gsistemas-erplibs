@@ -108,6 +108,17 @@ php vendor/bin/erplibs migrate
 php vendor/bin/erplibs migrate:rollback --steps=1
 ```
 
+Las aplicaciones web generadas también pueden habilitar Vue 3 + TypeScript y
+elegir un tema Material CSS propio o PrimeVue:
+
+```bash
+cd ../mi-erp
+php bin/app feature:enable vue
+php bin/app feature:enable material   # o feature:enable primevue
+npm install
+npm run dr2g:dev
+```
+
 ## Desarrollo de la librería
 
 ```bash

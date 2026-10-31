@@ -147,6 +147,9 @@ se puede apuntar a otro proyecto.
 | `make:repository <Nombre>` | `src/Repositories/<Nombre>Repository.php` | `--model=`, `--force` |
 | `make:subview <nombre>` | `src/views/partials/<nombre>.php` | `--force` |
 | `make:auth` | modelos, repositorios, migración, seeder, middleware, controladores, rutas y vistas de autenticación | `--no-register`, `--force` |
+| `feature:enable vue` | Vue 3, TypeScript, Composition API y Vite integrados al layout PHP | `--path=` |
+| `feature:enable material` | tema CSS Material Design generado, sin dependencia externa | `--path=` |
+| `feature:enable primevue` | PrimeVue 4 y preset Aura | `--path=` |
 | `db:seed [Clase]` | ejecuta un seeder (`AuthSeeder` por defecto) | `--path=` |
 | `make:test <Nombre>` | `src/tests/Unit/<Nombre>Test.php` | `--feature`, `--force` |
 | `make:migration <nombre>` | `migrations/<timestamp>_<nombre>.php` | — |
@@ -169,6 +172,35 @@ Detalles de comportamiento:
   modelos sobre tablas sin esas columnas siguen funcionando.
   `make:migration create_x_table` genera el DDL con `timestamps()` y
   `softDeletes()` para que las columnas existan.
+
+## Frontend Vue
+
+Los features se habilitan desde la raíz de una app web generada:
+
+```bash
+php bin/app feature:enable vue
+php bin/app feature:enable material   # elige un único tema visual
+# o, en su lugar:
+php bin/app feature:enable primevue
+
+npm install
+npm run dr2g:dev
+```
+
+`vue` agrega una app Vue 3 con TypeScript y Composition API, Vite, y el punto de
+montaje en `src/views/layout.php`. En desarrollo el layout usa Vite en
+`127.0.0.1:5173`; en producción sirve `public/build/manifest.json`:
+
+```bash
+npm run dr2g:typecheck
+npm run dr2g:build
+```
+
+`material` agrega un tema Material Design CSS propio, sin dependencia npm.
+`primevue` instala PrimeVue 4 y configura el preset Aura; los componentes se
+importan desde sus módulos en los componentes Vue. Material y PrimeVue son
+excluyentes. La elección queda registrada en `.dr2g/features.json`, y los
+comandos se pueden repetir sin duplicar la configuración.
 
 ## Subviews
 
