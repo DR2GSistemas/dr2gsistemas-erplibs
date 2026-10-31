@@ -30,6 +30,10 @@ class MigrateCommand extends Command
             }
         }
 
+        $root = (string) getcwd();
+        \Dr2g\ErpLibs\Config\DotEnv::load($root . '/.env');
+        \Dr2g\ErpLibs\Config\DotEnv::load($root . '/.env.local');
+
         $config = require $this->resolveConfigFile();
 
         $dbManager = new DatabaseManager($config);

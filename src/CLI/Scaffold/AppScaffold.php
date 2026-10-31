@@ -443,6 +443,20 @@ ENV;
         return <<<PHP
 <?php
 
+\$dbConnection = strtolower(getenv('DB_CONNECTION') ?: 'sqlite');
+\$databaseDsn = getenv('DB_DSN') ?: '';
+\$database = getenv('APP_DATABASE') ?: null;
+
+if (\$database === null) {
+    if (\$databaseDsn !== '') {
+        \$database = \$databaseDsn;
+    } elseif (str_starts_with(\$dbConnection, 'sqlite')) {
+        \$databasePath = getenv('DB_DATABASE') ?: 'storage/app.sqlite';
+        \$absolute = str_starts_with(\$databasePath, '/') || preg_match('#^[A-Za-z]:[\\\\/]#', \$databasePath) === 1;
+        \$database = 'sqlite:' . (\$absolute ? \$databasePath : dirname(__DIR__, 2) . '/' . ltrim(\$databasePath, '/'));
+    }
+}
+
 /*
  * Configuración de la aplicación. Los valores vienen de .env (ver .env.template).
  */
@@ -466,10 +480,8 @@ return [
         'admin_email' => getenv('INSTALL_ADMIN_EMAIL') ?: 'admin@example.com',
         'admin_password' => getenv('INSTALL_ADMIN_PASSWORD') ?: '',
     ],
-    // Base de datos del servidor embebido (sqlite:... o null para no preparar nada).
-    'database' => getenv('APP_DATABASE') ?: (str_starts_with((string) (getenv('DB_CONNECTION') ?: 'sqlite'), 'sqlite')
-        ? 'sqlite:' . dirname(__DIR__, 2) . '/storage/app.sqlite'
-        : null),
+    // DSN efectivo que usa el servidor embebido para decidir si prepara SQLite.
+    'database' => \$database,
 ];
 
 PHP;

@@ -8,6 +8,16 @@ Todas las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
 Pendiente de la próxima versión.
 
+## [1.8.1] — 2026-10-30
+
+### Corregido
+
+- **SQLite en proyectos generados**: `migrate` y `migrate:rollback` no cargaban
+  `.env` antes de resolver la conexión, lo que podía crear `storage/app.sqlite`
+  además del archivo definido por `DB_DATABASE`. Los comandos cargan ahora el
+  entorno del proyecto, y el servidor embebido deriva el DSN SQLite de esa misma
+  configuración.
+
 ## [1.8.0] — 2026-10-30
 
 ### Añadido

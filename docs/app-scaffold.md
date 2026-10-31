@@ -51,7 +51,9 @@ $database = require 'config/database.php'; // DB_CONNECTION, DB_HOST...
 
 - `bin/app app:serve` usa **`APP_PORT`** si no se pasa `--port`.
 - Con `DB_CONNECTION=sqlite` la base es `DB_DATABASE` (ruta relativa al proyecto)
-  y la tabla se crea al arrancar el servidor embebido.
+  y la tabla se crea al arrancar el servidor embebido. `migrate` y
+  `migrate:rollback` cargan la configuración de `.env` antes de abrir la base,
+  por lo que ambos comandos y el servidor usan el mismo archivo.
 - Con `DB_CONNECTION=mysql|mariadb|pgsql` se arma el DSN con los `DB_*`
   (o se usa `DB_DSN` si está definido) y se aplica con `php bin/app migrate`.
 - `SEED_TODOS=true` inserta `SEED_TODO_TITLE` la primera vez que se visita `/`.
