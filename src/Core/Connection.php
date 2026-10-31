@@ -105,7 +105,17 @@ class Connection
 
     public function getDriver(): string
     {
-        return (string) ($this->config['driver'] ?? '');
+        if (isset($this->config['driver']) && $this->config['driver'] !== '') {
+            return (string) $this->config['driver'];
+        }
+
+        // La conexión SQLite del proyecto sólo declara `dsn`; sin esta
+        // deducción, las migraciones no detectaban el motor y usaban el DDL
+        // de MySQL.
+        $dsn = (string) ($this->config['dsn'] ?? '');
+        $scheme = str_contains($dsn, ':') ? strstr($dsn, ':', true) : false;
+
+        return $scheme === false ? '' : strtolower($scheme);
     }
 
     /** @param list<mixed> $bindings */

@@ -179,6 +179,7 @@ JSON;
         $kernelClass = $api ? 'ApiKernel' : 'Kernel';
         $rendererUse = $api ? '' : "use Dr2g\\ErpLibs\\View\\Renderer;\n";
         $kernelLine = self::kernelLine($kernelClass, $api);
+        $servicesLine = self::kernelServicesLine($namespace);
 
         return <<<PHP
 <?php
@@ -207,8 +208,43 @@ Model::setDbManager(new DatabaseManager(\$database));
 
 {$kernelLine}
 
+{$servicesLine}
+
 return \$kernel;
 
+PHP;
+    }
+
+    /**
+     * `make:auth` deja aquí los servicios de sesión/auth/gate para las rutas.
+     * Si el proyecto no tiene el feature, el bloque no se genera.
+     */
+    private static function kernelServicesLine(string $namespace): string
+    {
+        return <<<PHP
+// Servicios de autenticación: sólo si el proyecto ejecutó `make:auth`.
+if (class_exists(\\{$namespace}\\Repositories\\UserRepository::class)) {
+    \$session = new Dr2g\\ErpLibs\\Auth\\Session\\Session();
+    \$session->start();
+
+    \$csrf = new Dr2g\\ErpLibs\\Auth\\Csrf\\CsrfTokenManager(\$session);
+    \$auth = new Dr2g\\ErpLibs\\Auth\\AuthManager(
+        \$session,
+        static fn (int|string \$id) => (new \\{$namespace}\\Repositories\\UserRepository())->find((int) \$id)
+    );
+    \$gate = new Dr2g\\ErpLibs\\Auth\\Gate();
+
+    \$kernel->withServices([
+        'session' => \$session,
+        'csrf' => \$csrf,
+        'auth' => \$auth,
+        'gate' => \$gate,
+    ]);
+
+    // Sesión y CSRF en toda la aplicación (el propio middleware es idempotente).
+    \$kernel->router()->use(new \\{$namespace}\\Http\\Middleware\\StartSession(\$session));
+    \$kernel->router()->use(new \\{$namespace}\\Http\\Middleware\\VerifyCsrf(\$csrf, \$kernel->renderer()));
+}
 PHP;
     }
 
@@ -321,7 +357,7 @@ API_CACHE_TTL=60
 
 # --- Otros datos iniciales ----------------------------------------------------
 INSTALL_ADMIN_NAME="Administrador"
-INSTALL_ADMIN_EMAIL=admin@localhost
+INSTALL_ADMIN_EMAIL=admin@example.com
 INSTALL_ADMIN_PASSWORD=       # vacío: se genera al instalar
 MAIL_FROM=no-reply@localhost
 MAIL_TRANSPORT=log            # log | smtp
@@ -427,7 +463,7 @@ return [
     ],
     'install' => [
         'admin_name' => getenv('INSTALL_ADMIN_NAME') ?: 'Administrador',
-        'admin_email' => getenv('INSTALL_ADMIN_EMAIL') ?: 'admin@localhost',
+        'admin_email' => getenv('INSTALL_ADMIN_EMAIL') ?: 'admin@example.com',
         'admin_password' => getenv('INSTALL_ADMIN_PASSWORD') ?: '',
     ],
     // Base de datos del servidor embebido (sqlite:... o null para no preparar nada).
@@ -610,6 +646,13 @@ class Kernel
     private Router \$router;
 
     /**
+     * Servicios compartidos con src/routes/*.php (sesión, auth, gate, csrf).
+     *
+     * @var array<string, mixed>
+     */
+    private array \$services = [];
+
+    /**
      * @param array<string, mixed> \$config
      */
     public function __construct(
@@ -637,16 +680,33 @@ class Kernel
 
     /**
      * Carga las rutas declaradas en routes/*.php.
+     *
+     * Los archivos comparten ámbito entre sí y reciben `\$kernel` y el mapa de
+     * servicios (sesión, auth, gate, csrf) inyectado desde bootstrap.php; con
+     * `extract()` cada archivo los usa como variables normales.
+     *
+     * @param array<string, mixed> \$services
      */
-    public function loadRoutes(string \$routesPath): self
+    public function loadRoutes(string \$routesPath, array \$services = []): self
     {
         \$kernel = \$this;
+        extract(\$services + \$this->services, EXTR_SKIP);
 
-        foreach (glob(\$routesPath . '/*.php') ?: [] as \$file) {
-            (static function (string \$__file) use (\$kernel): void {
-                require \$__file;
-            })(\$file);
+        foreach (glob(\$routesPath . '/*.php') ?: [] as \$__file) {
+            require \$__file;
         }
+
+        return \$this;
+    }
+
+    /**
+     * Servicios compartidos con los archivos de rutas (sesión, auth, gate...).
+     *
+     * @param array<string, mixed> \$services
+     */
+    public function withServices(array \$services): self
+    {
+        \$this->services = \$services;
 
         return \$this;
     }

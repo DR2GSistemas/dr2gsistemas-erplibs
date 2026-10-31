@@ -2,8 +2,10 @@
 
 namespace Dr2g\ErpLibs\Repositories;
 
+use Dr2g\ErpLibs\Core\Connection;
 use Dr2g\ErpLibs\Core\QueryBuilder;
 use Dr2g\ErpLibs\Models\Model;
+use Dr2g\ErpLibs\Security\SQLInjectionGuard;
 
 /**
  * Acceso a datos de un modelo: encapsula consultas y evita repetir SQL en
@@ -129,6 +131,126 @@ abstract class Repository
         $model = $this->model();
 
         return $model::query()->count();
+    }
+
+    /**
+     * Añade relacionadas a una tabla pivote, ignorando las que ya existan.
+     *
+     * @param list<int|string> $ids
+     */
+    public function attachMany(Model $model, string $pivot, string $ownerKey, string $relatedKey, array $ids): void
+    {
+        $connection = $this->connection();
+        $ownerId = $this->ownerId($model);
+        $existing = $this->relatedIds($pivot, $ownerKey, $relatedKey, $ownerId);
+
+        foreach ($this->cleanIds($ids) as $relatedId) {
+            if (in_array($relatedId, $existing, true)) {
+                continue;
+            }
+
+            $connection->insert($pivot, [
+                $ownerKey => $ownerId,
+                $relatedKey => $relatedId,
+            ]);
+        }
+    }
+
+    /**
+     * Deja en la tabla pivote exactamente las relacionadas indicadas.
+     *
+     * @param list<int|string> $ids
+     */
+    public function syncMany(Model $model, string $pivot, string $ownerKey, string $relatedKey, array $ids): void
+    {
+        $connection = $this->connection();
+        $ownerId = $this->ownerId($model);
+        $target = $this->cleanIds($ids);
+        $existing = $this->relatedIds($pivot, $ownerKey, $relatedKey, $ownerId);
+
+        foreach (array_diff($existing, $target) as $removed) {
+            $connection->delete(
+                $pivot,
+                sprintf('%s = ? AND %s = ?', $ownerKey, $relatedKey),
+                [$ownerId, $removed]
+            );
+        }
+
+        $this->attachMany($model, $pivot, $ownerKey, $relatedKey, $target);
+    }
+
+    /**
+     * Identificadores relacionados ya guardados en la tabla pivote.
+     *
+     * @return list<int>
+     */
+    public function relatedIds(string $pivot, string $ownerKey, string $relatedKey, int|string $ownerId): array
+    {
+        $this->assertPivot($pivot, $ownerKey, $relatedKey);
+
+        $rows = $this->connection()->select(
+            sprintf('SELECT %s AS related_id FROM %s WHERE %s = ?', $relatedKey, $pivot, $ownerKey),
+            [$ownerId]
+        );
+
+        return array_map(static fn (array $row): int => (int) $row['related_id'], $rows);
+    }
+
+    /**
+     * Comprueba que tabla y columnas son identificadores simples antes de
+     * interpolarlas: los valores siempre van por binding.
+     */
+    private function assertPivot(string $pivot, string $ownerKey, string $relatedKey): void
+    {
+        SQLInjectionGuard::assertIdentifier($pivot, 'pivot table');
+        SQLInjectionGuard::assertIdentifier($ownerKey, 'owner key');
+        SQLInjectionGuard::assertIdentifier($relatedKey, 'related key');
+    }
+
+    /**
+     * @return list<int>
+     */
+    /**
+     * @param list<int|string> $ids
+     * @return list<int>
+     */
+    private function cleanIds(array $ids): array
+    {
+        $clean = [];
+        foreach ($ids as $id) {
+            if (is_int($id)) {
+                $clean[] = $id;
+
+                continue;
+            }
+
+            // Cadenas: sólo dígitos. Cualquier otra cosa se descarta en vez de
+            // llegar a la SQL.
+            if (ctype_digit($id)) {
+                $clean[] = (int) $id;
+            }
+        }
+
+        return array_values(array_unique($clean));
+    }
+
+    private function ownerId(Model $model): int
+    {
+        $key = $model::getPrimaryKey();
+        $value = $model->toArray()[$key] ?? null;
+
+        if ($value === null) {
+            throw new \RuntimeException('El modelo no tiene clave primaria: guárdalo antes de relacionarlo.');
+        }
+
+        return (int) $value;
+    }
+
+    private function connection(): Connection
+    {
+        $model = $this->model();
+
+        return $model::connection();
     }
 
     /**

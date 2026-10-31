@@ -144,6 +144,8 @@ se puede apuntar a otro proyecto.
 | `make:request <Nombre>` | `src/Http/Requests/<Nombre>Request.php` | `--force` |
 | `make:repository <Nombre>` | `src/Repositories/<Nombre>Repository.php` | `--model=`, `--force` |
 | `make:subview <nombre>` | `src/views/partials/<nombre>.php` | `--force` |
+| `make:auth` | modelos, repositorios, migración, seeder, middleware, controladores, rutas y vistas de autenticación | `--no-register`, `--force` |
+| `db:seed [Clase]` | ejecuta un seeder (`AuthSeeder` por defecto) | `--path=` |
 | `make:test <Nombre>` | `src/tests/Unit/<Nombre>Test.php` | `--feature`, `--force` |
 | `make:migration <nombre>` | `migrations/<timestamp>_<nombre>.php` | — |
 
@@ -211,6 +213,78 @@ bin/app make:route /products --controller=ProductsController@index
 bin/app make:model Product
 bin/app make:controller Product --api     # src/Controllers/Api/ProductController.php
 ```
+
+## Autenticación con RBAC (`make:auth`)
+
+Genera autenticación completa con **usuario → N:N → rol → N:N → permiso**.
+La infraestructura vive en la librería (`Dr2g\ErpLibs\Auth`); el proyecto recibe
+modelos, repositorios, controladores y vistas.
+
+```bash
+bin/app make:auth                 # login + registro
+bin/app make:auth --no-register   # sin registro
+bin/app migrate
+bin/app db:seed                   # permisos + rol admin + usuario admin
+```
+
+### Modelo de datos
+
+| Tabla | Contenido |
+| --- | --- |
+| `users` | name, email (único), password (hash), is_active, timestamps, deleted_at |
+| `roles` | name (único), label, description, timestamps, deleted_at |
+| `permissions` | name (único, `recurso.accion`), label, timestamps |
+| `role_user` | pivote N:N |
+| `permission_role` | pivote N:N |
+
+### Conexión en `bootstrap.php`
+
+El comando imprime los pasos. En resumen, tras crear el kernel:
+
+```php
+$session = new Dr2g\ErpLibs\Auth\Session\Session();
+$session->start();
+
+$auth = new Dr2g\ErpLibs\Auth\AuthManager(
+    $session,
+    fn ($id) => (new Acme\Repositories\UserRepository())->find((int) $id)
+);
+
+$gate = new Dr2g\ErpLibs\Auth\Gate();
+```
+
+`src/routes/auth.php` usa `$authController` y `$registerController`; para proteger
+un grupo de rutas añade los middleware:
+
+```php
+$kernel->router()->use(new Acme\Http\Middleware\StartSession($session));
+$kernel->router()->use(new Acme\Http\Middleware\VerifyCsrf($csrf));
+```
+
+### Permisos iniciales
+
+`users.{view,create,update,delete}`, `roles.{view,create,update,delete}` y
+`permissions.view`. El rol `admin` los recibe todos; el usuario administrador se
+crea desde `INSTALL_ADMIN_EMAIL` / `INSTALL_ADMIN_PASSWORD` del `.env`.
+
+### Panel de administración
+
+`make:auth` genera además `/admin`, protegido por sesión y permiso:
+
+| Ruta | Acción | Permiso |
+| --- | --- | --- |
+| `/admin` | listado de usuarios | `users.view` |
+| `/admin/users` | listado, alta, edición con roles y borrado | `users.view` |
+| `/admin/roles` | listado, alta, edición con permisos y borrado | `roles.view` |
+| `/admin/permissions` | catálogo de permisos | `permissions.view` |
+
+### Seguridad incluida
+
+- `password_hash` / `password_verify` y `needsRehash`.
+- Regeneración del id de sesión al entrar y al salir.
+- CSRF con `hash_equals` en toda petición no segura.
+- Mensaje idéntico si el email no existe o la contraseña falla.
+- Redirección de login restringida a rutas internas (`/...`).
 
 ## Qué genera `--crud=todo`
 

@@ -482,4 +482,13 @@ abstract class Model
 
         return self::$dbManager->getConnection();
     }
+
+    /**
+     * Acceso público a la conexión del modelo (para repositorios y consultas
+     * que no caben en el query builder).
+     */
+    public static function connection(): \Dr2g\ErpLibs\Core\Connection
+    {
+        return static::getConnection();
+    }
 }

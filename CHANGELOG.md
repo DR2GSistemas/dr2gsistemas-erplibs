@@ -8,6 +8,60 @@ Todas las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
 Pendiente de la próxima versión.
 
+## [1.8.0] — 2026-10-30
+
+### Añadido
+
+- **Auth (RBAC)**: infraestructura reutilizable en `src/Auth/`:
+  - `Session\Session` sobre `$_SESSION` (cookie `httponly`, `samesite=Lax`,
+    `secure` opcional) y `Session\ArraySession` para tests.
+  - `Csrf\CsrfTokenManager` con comparación `hash_equals()` y `rotate()`.
+  - `Password\Hasher` (`password_hash` / `password_verify` / `needsRehash`).
+  - `Gate` (permisos con comodines `users.*` y `*`), `AuthManager`
+    (login/logout con regeneración de id de sesión) y la interfaz `Authorizable`.
+  - Middleware `Authenticate` (redirige o 401 JSON) y `RequirePermission`
+    (403 con vista o JSON).
+- **Repositorios N:N**: `Repository::attachMany()`, `syncMany()` y `relatedIds()`
+  para tablas pivote, con identificadores validados por `SQLInjectionGuard` y
+  valores siempre por binding.
+- **`Model::connection()`**: acceso público a la conexión del modelo.
+- **CLI `make:auth [--no-register] [--force] [--path=]`**: genera modelos `User`,
+  `Role` y `Permission`, repositorios con roles y permisos efectivos, migración de
+  las cinco tablas, seeder del administrador (permisos, rol `admin` y usuario desde
+  `INSTALL_ADMIN_*`), middleware `StartSession`/`VerifyCsrf`, controladores de
+  login/registro, rutas, vistas (login, registro, 403) y tests.
+- **CLI `db:seed [Clase] [--path=]`**: ejecuta un seeder del proyecto
+  (`AuthSeeder` por defecto).
+- **Panel de administración** (`make:auth`): controladores `Admin\UsersController`
+  (listado paginado, alta, edición con roles, borrado), `Admin\RolesController`
+  (CRUD con asignación de permisos) y `Admin\PermissionsController` (catálogo);
+  rutas `/admin/*` protegidas por sesión y permiso; vistas de usuarios, roles,
+  permisos, navegación y error 419; test de acceso al panel.
+- **Kernel generado**: `withServices()` permite pasar sesión, CSRF, auth y gate a
+  los archivos de `src/routes/`; `loadRoutes()` comparte ámbito entre ellos y
+  hace `extract()` de esos servicios, de modo que el orden alfabético de carga
+  deja de importar. El bootstrap genera el bloque de autenticación sólo si el
+  proyecto tiene `make:auth`.
+
+### Corregido
+
+- **`migrate` y `migrate:rollback`** buscaban `config/database.php` (estructura
+  anterior a la 1.4.0) y no encontraban la configuración en `src/config/`. Ahora
+  aceptan ambas ubicaciones.
+- **`migrate`** usaba por defecto el directorio `migrations/` de la librería, así
+  que las migraciones de un proyecto generado nunca se ejecutaban.
+- **`Connection::getDriver()`** devolvía cadena vacía cuando la conexión sólo
+  declaraba `dsn` (caso de SQLite en los proyectos generados): las migraciones
+  usaban DDL de MySQL y fallaban. Ahora deduce el motor del DSN.
+- Scaffold: `INSTALL_ADMIN_EMAIL` usaba `admin@localhost`, que `FILTER_VALIDATE_EMAIL`
+  rechaza; ahora es `admin@example.com`.
+- **Sesión en CLI**: `Session::start()` llamaba a `session_name()`/`session_start()`
+  también en línea de comandos, lo que emite cabeceras y falla en scripts y
+  seeders. Ahora usa una sesión en memoria cuando no hay SAPI web.
+- **Kernel generado**: `loadRoutes()` aislaba cada archivo de rutas en un closure,
+  así que un archivo no podía usar variables definidas por otro (ni `routes/todo.php`
+  las de `web.php`). Ahora comparten ámbito.
+
 ## [1.7.0] — 2026-10-30
 
 ### Añadido

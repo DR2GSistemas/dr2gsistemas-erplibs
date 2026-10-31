@@ -4,6 +4,8 @@ require __DIR__ . '/../bootstrap.php';
 
 use Dr2g\ErpLibs\CLI\Commands\AppCreateCommand;
 use Dr2g\ErpLibs\CLI\Commands\AppServeCommand;
+use Dr2g\ErpLibs\CLI\Commands\DbSeedCommand;
+use Dr2g\ErpLibs\CLI\Commands\MakeAuthCommand;
 use Dr2g\ErpLibs\CLI\Commands\MakeControllerCommand;
 use Dr2g\ErpLibs\CLI\Commands\MakeMiddlewareCommand;
 use Dr2g\ErpLibs\CLI\Commands\MakeMigrationCommand;
@@ -16,6 +18,8 @@ use Dr2g\ErpLibs\CLI\Commands\MakeTestCommand;
 use Dr2g\ErpLibs\CLI\Commands\MakeViewCommand;
 use Dr2g\ErpLibs\CLI\Commands\MigrateCommand;
 use Dr2g\ErpLibs\CLI\Commands\NewAppCommand;
+use Dr2g\ErpLibs\CLI\Commands\PermissionListCommand;
+use Dr2g\ErpLibs\CLI\Commands\RoleAssignCommand;
 use Dr2g\ErpLibs\CLI\Commands\RollbackCommand;
 use Dr2g\ErpLibs\CLI\Console;
 
@@ -23,6 +27,7 @@ $console = new Console();
 $console->addCommand(new AppCreateCommand());
 $console->addCommand(new AppServeCommand());
 $console->addCommand(new NewAppCommand());
+$console->addCommand(new MakeAuthCommand());
 $console->addCommand(new MakeControllerCommand());
 $console->addCommand(new MakeModelCommand());
 $console->addCommand(new MakeViewCommand());
@@ -34,6 +39,9 @@ $console->addCommand(new MakeSubviewCommand());
 $console->addCommand(new MakeTestCommand());
 $console->addCommand(new MakeMigrationCommand());
 $console->addCommand(new MigrateCommand());
+$console->addCommand(new DbSeedCommand());
+$console->addCommand(new RoleAssignCommand());
+$console->addCommand(new PermissionListCommand());
 $console->addCommand(new RollbackCommand());
 
 $console->run($_SERVER['argv']);
