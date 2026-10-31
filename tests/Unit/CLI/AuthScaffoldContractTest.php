@@ -68,4 +68,12 @@ final class AuthScaffoldContractTest extends TestCase
         self::assertTrue(is_subclass_of('AuthScaffoldFixture\\Repositories\\UserRepository', AuthUserRepository::class));
         self::assertTrue(is_subclass_of('AuthScaffoldFixture\\Repositories\\RoleRepository', AuthRoleRepository::class));
     }
+
+    public function testGeneratedPivotForeignKeysMatchUnsignedBigintIds(): void
+    {
+        $migration = AuthScaffold::files('AuthScaffoldFixture')[AuthScaffold::MIGRATION];
+
+        self::assertStringContainsString('%s BIGINT UNSIGNED NOT NULL', $migration);
+        self::assertStringNotContainsString('%s INT NOT NULL', $migration);
+    }
 }

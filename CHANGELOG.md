@@ -4,7 +4,11 @@ Todas las versiones siguen [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-### Sin cambios
+### Corregido
+
+- **Migración RBAC en MySQL**: las columnas de las tablas pivote ahora son
+  `BIGINT UNSIGNED`, coincidiendo con los IDs de las tablas `users`, `roles`
+  y `permissions` y evitando errores al crear sus claves foráneas.
 
 Pendiente de la próxima versión.
 

@@ -1114,8 +1114,8 @@ class CreateAuthTables extends Migration
     {
         $this->connection()->execute(sprintf(
             'CREATE TABLE %s (
-                %s INT NOT NULL,
-                %s INT NOT NULL,
+                %s BIGINT UNSIGNED NOT NULL,
+                %s BIGINT UNSIGNED NOT NULL,
                 PRIMARY KEY (%s, %s),
                 FOREIGN KEY (%s) REFERENCES %s(id) ON DELETE CASCADE,
                 FOREIGN KEY (%s) REFERENCES %s(id) ON DELETE CASCADE
